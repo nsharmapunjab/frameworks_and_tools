@@ -1,1 +1,1 @@
-# ai_rag_usecases
+# Generic Frameworks and Tools

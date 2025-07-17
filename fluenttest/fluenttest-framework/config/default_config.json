@@ -1,0 +1,29 @@
+{
+    "appium_server": {
+        "host": "localhost",
+        "port": 4723,
+        "timeout": 300
+    },
+    "android_capabilities": {
+        "platformName": "Android",
+        "automationName": "UiAutomator2",
+        "noReset": true,
+        "fullReset": false,
+        "autoGrantPermissions": true,
+        "disableWindowAnimation": true,
+        "newCommandTimeout": 300
+    },
+    "fluenttest_settings": {
+        "similarity_threshold": 0.6,
+        "max_retries": 3,
+        "element_wait_timeout": 10,
+        "cache_enabled": true,
+        "debug_mode": false,
+        "screenshot_on_failure": true
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "fluenttest.log",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    }
+}
