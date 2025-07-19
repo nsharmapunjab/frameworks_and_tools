@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  firstName String
+  lastName  String
+  role      Role     @default(DEVELOPER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdTestCases    TestCase[] @relation("TestCaseCreator")
+  assignedTestCases   TestCase[] @relation("TestCaseAssignee")
+  testExecutions      TestExecution[]
+  projectMembers      ProjectMember[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  components      Component[]
+  features        Feature[]
+  testCases       TestCase[]
+  releases        Release[]
+  members         ProjectMember[]
+  jenkinsConfig   JenkinsConfig?
+
+  @@map("projects")
+}
+
+model Component {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  features  Feature[]
+  testCases TestCase[]
+
+  @@unique([projectId, name])
+  @@map("components")
+}
+
+model TestCase {
+  id                String            @id @default(cuid())
+  name              String
+  description       String?
+  scenario          String
+  validations       String[]
+  automationStatus  AutomationStatus  @default(MANUAL)
+  regressionStatus  RegressionStatus  @default(NO)
+  priority          Priority          @default(MEDIUM)
+  status            TestCaseStatus    @default(DRAFT)
+  tags              String[]
+  
+  projectId         String
+  componentId       String
+  featureId         String
+  createdById       String
+  assignedToId      String?
+  
+  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  component         Component         @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  feature           Feature           @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  createdBy         User              @relation("TestCaseCreator", fields: [createdById], references: [id])
+  assignedTo        User?             @relation("TestCaseAssignee", fields: [assignedToId], references: [id])
+  
+  executions        TestExecution[]
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("test_cases")
+}
+
+enum Role {
+  ADMIN
+  QA
+  DEVELOPER
+  PM
+}
+
+enum AutomationStatus {
+  MANUAL
+  AUTOMATED
+  SEMI_AUTOMATED
+}
+
+enum RegressionStatus {
+  YES
+  NO
+  CONDITIONAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TestCaseStatus {
+  DRAFT
+  READY
+  APPROVED
+  DEPRECATED
+}
