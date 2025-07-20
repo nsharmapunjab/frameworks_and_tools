@@ -76,7 +76,8 @@ requests>=2.25.0
 ```bash
 # Clone the repository
 git clone https://github.com/nsharmapunjab/frameworks_and_tools.git
-cd api_tester
+cd apitester
+cd python
 
 # Install dependencies
 pip install requests
