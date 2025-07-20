@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Report - 7/20/2025, 3:00:22 PM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 30px; text-align: center; position: relative; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; font-weight: 300; }
+        .header .subtitle { font-size: 1.2em; opacity: 0.8; }
+        .author-credit { position: absolute; top: 20px; right: 30px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; font-size: 0.9em; backdrop-filter: blur(10px); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 30px; background: #f8f9fa; }
+        .stat-card { background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-number { font-size: 2.5em; font-weight: bold; margin-bottom: 10px; }
+        .stat-label { font-size: 1.1em; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .passed { color: #27ae60; }
+        .failed { color: #e74c3c; }
+        .total { color: #3498db; }
+        .security { color: #9b59b6; }
+        .filters { padding: 20px 30px; background: #ecf0f1; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .filter-btn { padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; font-weight: 500; transition: all 0.3s ease; background: white; color: #2c3e50; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .filter-btn:hover, .filter-btn.active { background: #3498db; color: white; transform: translateY(-2px); }
+        .table-container { padding: 30px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        th { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 20px 15px; text-align: left; font-weight: 600; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px; border-bottom: 1px solid #ecf0f1; transition: background-color 0.3s ease; }
+        tr:hover td { background: #f8f9fa; }
+        .test-type { padding: 8px 15px; border-radius: 20px; font-size: 0.85em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .positive { background: #d5f4e6; color: #27ae60; }
+        .negative { background: #ffeaa7; color: #fdcb6e; }
+        .security { background: #fd79a8; color: #e84393; }
+        .edge { background: #a29bfe; color: #6c5ce7; }
+        .fuzz { background: #fd79a8; color: #e84393; }
+        .other { background: #ddd; color: #666; }
+        .status { padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.85em; }
+        .status.pass { background: #d5f4e6; color: #27ae60; }
+        .status.fail { background: #fab1a0; color: #e17055; }
+        .status.error { background: #636e72; color: white; }
+        .curl-summary { font-family: "Courier New", monospace; background: #2c3e50; color: #ecf0f1; padding: 8px 12px; border-radius: 5px; font-size: 0.8em; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: all 0.3s ease; }
+        .curl-summary:hover { background: #34495e; transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .description { max-width: 250px; word-wrap: break-word; }
+        .footer { background: #2c3e50; color: white; text-align: center; padding: 20px; font-size: 0.9em; }
+        .progress-bar { width: 100%; height: 8px; background: #ecf0f1; border-radius: 4px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #27ae60, #2ecc71); transition: width 0.3s ease; width: 100.0%; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }
+        .modal-content { background-color: #2c3e50; color: #ecf0f1; margin: 5% auto; padding: 30px; border-radius: 15px; width: 80%; max-width: 800px; font-family: "Courier New", monospace; font-size: 14px; line-height: 1.6; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .close { color: #ecf0f1; float: right; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.3s ease; }
+        .close:hover { color: #e74c3c; }
+        .modal-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #34495e; font-size: 18px; font-weight: bold; }
+        .copy-btn { background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 15px; transition: background 0.3s ease; }
+        .copy-btn:hover { background: #2980b9; }
+        .search-box { padding: 12px 20px; border: 2px solid #ddd; border-radius: 25px; font-size: 1em; width: 300px; transition: border-color 0.3s ease; }
+        .search-box:focus { outline: none; border-color: #3498db; }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .header h1 { font-size: 2em; }
+            .author-credit { position: static; margin-top: 15px; display: inline-block; }
+            .filters { justify-content: center; }
+            th, td { padding: 10px 8px; font-size: 0.85em; }
+            .modal-content { width: 95%; margin: 10% auto; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="author-credit">Built by Nitin Sharma</div>
+            <h1>🧪 API Test Report</h1>
+            <div class="subtitle">Generated on 7/20/2025, 3:00:22 PM</div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div style="margin-top: 15px; font-size: 1.3em;">Pass Rate: 100.0%</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number passed">1</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number failed">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number total">1</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number security">0/0</div>
+                <div class="stat-label">Security</div>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <input type="text" class="search-box" placeholder="🔍 Search test descriptions..." id="searchBox">
+            <button class="filter-btn active" onclick="filterTests('all')">All Tests</button>
+            <button class="filter-btn" onclick="filterTests('passed')">✅ Passed</button>
+            <button class="filter-btn" onclick="filterTests('failed')">❌ Failed</button>
+            <button class="filter-btn" onclick="filterTests('positive')">Positive</button>
+            <button class="filter-btn" onclick="filterTests('negative')">Negative</button>
+            <button class="filter-btn" onclick="filterTests('security')">🔒 Security</button>
+            <button class="filter-btn" onclick="filterTests('edge')">🎯 Edge Cases</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Test Type</th>
+                        <th>Description</th>
+                        <th>Request Summary</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="test-row" data-type="positive" data-status="passed">
+          <td><span class="test-type positive">Positive</span></td>
+          <td class="description">Valid input data</td>
+          <td><code class="curl-summary" onclick="showFullCurl(0)" title="Click to see full curl command">curl -X POST /objects -d '...' (click to expand)</code></td>
+          <td>201</td>
+          <td>200</td>
+          <td><span class="status pass">✅ PASS</span></td>
+        </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <div>Generated by Universal REST API Testing Tool</div>
+            <div style="margin-top: 10px; opacity: 0.8;">
+                Report contains 1 test cases with 100.0% pass rate
+            </div>
+            <div style="margin-top: 5px; opacity: 0.6; font-size: 0.8em;">
+                Built with ❤️ by Nitin Sharma
+            </div>
+        </div>
+    </div>
+    
+    <div id="curlModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">Complete cURL Command</div>
+            <pre id="curlContent" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+            <button class="copy-btn" onclick="copyCurl()">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+    
+    <script>
+        // Store curl commands properly
+        window.curlCommands = ["curl \\\n--location 'https://api.genderize.io?name=luc'"];
+        
+        function filterTests(filter) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Filter table rows
+            const rows = document.querySelectorAll('.test-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let shouldShow = false;
+                
+                switch(filter) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'passed':
+                        shouldShow = row.getAttribute('data-status') === 'passed';
+                        break;
+                    case 'failed':
+                        shouldShow = row.getAttribute('data-status') === 'failed';
+                        break;
+                    case 'positive':
+                        shouldShow = row.getAttribute('data-type') === 'positive';
+                        break;
+                    case 'negative':
+                        shouldShow = row.getAttribute('data-type') === 'negative';
+                        break;
+                    case 'security':
+                        shouldShow = row.getAttribute('data-type') === 'security';
+                        break;
+                    case 'edge':
+                        shouldShow = row.getAttribute('data-type') === 'edge';
+                        break;
+                    case 'fuzz':
+                        shouldShow = row.getAttribute('data-type') === 'fuzz';
+                        break;
+                }
+                
+                if (shouldShow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            console.log('Filter:', filter, 'Visible rows:', visibleCount);
+        }
+        
+        function showFullCurl(index) {
+            console.log('Showing curl for index:', index);
+            if (window.curlCommands && window.curlCommands[index]) {
+                const curlCommand = window.curlCommands[index];
+                document.getElementById('curlContent').textContent = curlCommand;
+                document.getElementById('curlModal').style.display = 'block';
+            } else {
+                console.error('No curl command found for index:', index);
+                alert('Curl command not available for this test');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('curlModal').style.display = 'none';
+        }
+        
+        function copyCurl() {
+            const curlContent = document.getElementById('curlContent').textContent;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(curlContent).then(function() {
+                    showCopySuccess();
+                }).catch(function() {
+                    fallbackCopy(curlContent);
+                });
+            } else {
+                fallbackCopy(curlContent);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess();
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                alert('Copy failed. Please select and copy manually.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess() {
+            const btn = document.querySelector('.copy-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            btn.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#3498db';
+            }, 2000);
+        }
+        
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('.test-row');
+            
+            rows.forEach(row => {
+                const description = row.querySelector('.description').textContent.toLowerCase();
+                const testType = row.querySelector('.test-type').textContent.toLowerCase();
+                
+                if (description.includes(searchTerm) || testType.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('curlModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('API Test Report loaded successfully');
+            console.log('Total curl commands available:', window.curlCommands ? window.curlCommands.length : 0);
+            
+            // Test filter functionality
+            const allRows = document.querySelectorAll('.test-row');
+            console.log('Total test rows found:', allRows.length);
+            
+            // Debug data attributes
+            allRows.forEach((row, index) => {
+                if (index < 5) { // Log first 5 for debugging
+                    console.log('Row', index, 'data-type:', row.getAttribute('data-type'), 'data-status:', row.getAttribute('data-status'));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
