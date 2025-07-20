@@ -75,8 +75,8 @@ requests>=2.25.0
 ### **Quick Install**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/api-tester.git
-cd api-tester
+git clone https://github.com/nsharmapunjab/frameworks_and_tools.git
+cd api_tester
 
 # Install dependencies
 pip install requests
@@ -304,7 +304,7 @@ curl -X POST 'https://api.example.com/endpoint' ...
 #### **Issue: cURL Parsing Errors**
 **Solution:** Use command line mode for complex commands
 ```bash
-python api-tester.py --curl 'your_entire_curl_command_in_quotes'
+python api_tester.py --curl 'your_entire_curl_command_in_quotes'
 ```
 
 #### **Issue: JSON Parsing Errors**
@@ -328,7 +328,7 @@ curl -X POST 'https://api.example.com/test' -v
 Enable verbose output to troubleshoot issues:
 ```bash
 # The tool automatically shows debug information
-python api-tester.py --curl "your_command" 2>&1 | tee debug.log
+python api_tester.py --curl "your_command" 2>&1 | tee debug.log
 ```
 
 ## 🤝 Contributing
@@ -428,7 +428,7 @@ SOFTWARE.
 
 - **📧 Email**: [nsharmapunjab@gmail.com](mailto:nsharmapunjab@gmail.com)
 - **💼 LinkedIn**: [Connect with me](https://www.linkedin.com/in/nitin-sharma-23512743/)
-- **🌐 Website**: [nitinsharma.dev](https://learnwithnitin.blogspot.com/)
+- **🌐 Website**: [Learn with Nitin](https://learnwithnitin.blogspot.com/)
 
 ---
 
