@@ -43,8 +43,7 @@ class CurlParser:
         # Clean up the curl command - remove line breaks and extra spaces
         cleaned_command = re.sub(r'\s*\\\s*', ' ', curl_command)
         cleaned_command = re.sub(r'\s+', ' ', cleaned_command).strip()
-        print(f'📝 Cleaned command length: {len(cleaned_command)}')
-        print(f'📝 Cleaned preview: {cleaned_command[:300]}...')
+        print(f'📝 Cleaned command: {cleaned_command[:200]}...')
         
         parsed = {
             'method': 'GET',
@@ -81,52 +80,14 @@ class CurlParser:
             parsed['method'] = (method_match.group(1) or method_match.group(2)).upper()
             print(f'✅ Found explicit method: {parsed["method"]}')
         
-        # Extract headers with improved parsing for complex values
-        # This pattern handles headers with JSON values that contain quotes
-        header_patterns = [
-            r'--header\s+[\'"]([^:\'"]+):\s*([^\'"](?:[^\'"]|\\[\'"])*)[\'"]',  # For JSON values
-            r'--header\s+[\'"]([^\'":]+):\s*([^\'",}]+)[\'"]',  # For simple values
-            r'--header\s+[\'"]([^\'"]+)[\'"]'  # Fallback pattern
-        ]
-        
-        # Track processed headers to avoid duplicates
-        processed_headers = set()
-        
-        for pattern in header_patterns:
-            for header_match in re.finditer(pattern, cleaned_command):
-                if len(header_match.groups()) >= 2:
-                    # Pattern with separate key and value groups
-                    key = header_match.group(1).strip()
-                    value = header_match.group(2).strip()
-                    header_text = f"{key}: {value}"
-                else:
-                    # Fallback pattern - split on first colon
-                    header_text = header_match.group(1)
-                    if ':' not in header_text:
-                        continue
-                    key, value = header_text.split(':', 1)
-                    key = key.strip()
-                    value = value.strip()
-                
-                # Skip if we already processed this header
-                if key.lower() in processed_headers:
-                    continue
-                
-                parsed['headers'][key] = value
-                processed_headers.add(key.lower())
-                print(f'✅ Found header: {key} = {value[:50]}...' if len(value) > 50 else f'✅ Found header: {key} = {value}')
-        
-        # Additional parsing for complex JSON headers that might be missed
-        # Look for patterns like: --header 'user: {"_id":"..."}'
-        complex_header_pattern = r'--header\s+[\'"]([^:]+):\s*(\{[^}]*\})[\'"]'
-        for header_match in re.finditer(complex_header_pattern, cleaned_command):
-            key = header_match.group(1).strip()
-            value = header_match.group(2).strip()
-            
-            if key.lower() not in processed_headers:
-                parsed['headers'][key] = value
-                processed_headers.add(key.lower())
-                print(f'✅ Found complex header: {key} = {value}')
+        # Extract headers with proper parsing
+        header_pattern = r'--header\s+[\'"]([^\'"]+)[\'"]'
+        for header_match in re.finditer(header_pattern, cleaned_command):
+            header = header_match.group(1)
+            if ':' in header:
+                key, value = header.split(':', 1)
+                parsed['headers'][key.strip()] = value.strip()
+                print(f'✅ Found header: {key.strip()} = {value.strip()}')
 
         # Extract data with improved parsing
         parsed['data'] = CurlParser._extract_data(cleaned_command)
@@ -135,21 +96,6 @@ class CurlParser:
         if parsed['data'] and parsed['method'] == 'GET':
             parsed['method'] = 'POST'
             print('🔄 Auto-detected method as POST due to data presence (curl default behavior)')
-        
-        # Debug output
-        print('\n🔧 PARSING SUMMARY:')
-        print(f'   Method: {parsed["method"]}')
-        print(f'   URL: {parsed["url"]}')
-        print(f'   Headers count: {len(parsed["headers"])}')
-        for key, value in parsed["headers"].items():
-            print(f'     {key}: {value[:100]}...' if len(value) > 100 else f'     {key}: {value}')
-        print(f'   Data type: {type(parsed["data"]).__name__}')
-        if parsed["data"]:
-            if isinstance(parsed["data"], dict):
-                print(f'   Data keys: {list(parsed["data"].keys())}')
-            else:
-                print(f'   Data preview: {str(parsed["data"])[:100]}...')
-        print('')
 
         return parsed
 
@@ -1840,53 +1786,6 @@ class EnhancedAPITester:
             print('Debug info:', traceback.format_exc())
 
 
-def test_curl_parsing():
-    """Test function to debug cURL parsing with your specific command"""
-    sample_curl = '''curl --location --request POST 'http://pricing-service.svc.staging.internal/api/fare-estimates' \\
---header 'appversion: 412' \\
---header 'Content-Type: application/json' \\
---header 'user: {"_id":"5f97f46a9663d80a60400ed2"}' \\
---header 'channel-name: app' \\
---header 'city: Vijayawada' \\
---header 'channel-host: android' \\
---data-raw '{    "requestId": "12345",    "requests": [        {            "couponCode": "",            "estimateId": "681082dea18f1427fa75fe88",            "upiAppName": "",            "paymentType": "",            "pickupLocation": {                "lat": 16.514236152,                "lng": 80.6469466315            },            "dropLocation": {                "lat": 16.48522157319,                "lng": 80.7478835212                 },            "services": [                {                    "id": "5bd6c6e2e79cc313a94728d0",                    "serviceDetailId": "611d0b1cd74f4855b6fa061e"                }            ],            "isReturnToOriginOrder": false        }    ]}'
-'''
-    
-    print("🧪 Testing cURL Parsing with Your Sample Command")
-    print("=" * 60)
-    
-    parser = CurlParser()
-    result = parser.parse_curl(sample_curl)
-    
-    print("\n🎯 EXPECTED vs ACTUAL:")
-    print("Expected user header:", '{"_id":"5f97f46a9663d80a60400ed2"}')
-    print("Actual user header  :", result['headers'].get('user', 'NOT FOUND'))
-    
-    return result
-
-
-def main():
-    """Enhanced main function"""
-    args = parse_arguments()
-    tester = EnhancedAPITester()
-    
-    # Add a test flag for debugging
-    if hasattr(args, 'test') and args.test:
-        test_curl_parsing()
-        return
-    
-    # If no arguments provided or interactive flag, run interactive mode
-    if len(sys.argv) == 1 or args.interactive or not args.curl:
-        tester.run_interactive_mode()
-        return
-    
-    # Command line mode
-    print('🧪 Running Enhanced API Tests (Command Line Mode)...')
-    print('Enhanced by Nitin Sharma\n')
-    
-    tester.run_comprehensive_tests(args.curl, args.status)
-
-
 def parse_arguments():
     """Enhanced argument parsing"""
     parser = argparse.ArgumentParser(
@@ -1915,9 +1814,6 @@ Examples:
   With expected status:
     python enhanced_api_tester.py --curl 'curl -X POST ...' --status 201
 
-  Test parsing (DEBUG):
-    python enhanced_api_tester.py --test
-
 👨‍💻 Enhanced with ❤️ by Nitin Sharma - Comprehensive API Testing Solution
         '''
     )
@@ -1942,14 +1838,24 @@ Examples:
         default=False
     )
     
-    parser.add_argument(
-        '--test', '-t',
-        help='Test cURL parsing with sample command (DEBUG)',
-        action='store_true',
-        default=False
-    )
-    
     return parser.parse_args()
+
+
+def main():
+    """Enhanced main function"""
+    args = parse_arguments()
+    tester = EnhancedAPITester()
+    
+    # If no arguments provided or interactive flag, run interactive mode
+    if len(sys.argv) == 1 or args.interactive or not args.curl:
+        tester.run_interactive_mode()
+        return
+    
+    # Command line mode
+    print('🧪 Running Enhanced API Tests (Command Line Mode)...')
+    print('Enhanced by Nitin Sharma\n')
+    
+    tester.run_comprehensive_tests(args.curl, args.status)
 
 
 if __name__ == '__main__':
