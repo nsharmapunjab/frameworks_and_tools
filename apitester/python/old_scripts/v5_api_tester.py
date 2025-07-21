@@ -1250,11 +1250,8 @@ class ReportGenerator:
         self.results = []
 
     def add_result(self, test_case: Dict[str, Any], response: Dict[str, Any], expected_status: int):
-        """Add test result with enhanced response data"""
+        """Add test result"""
         passed = self._is_expected_result(response['status'], expected_status, test_case['type'])
-        
-        # Format response data for better display
-        formatted_response = self._format_response_data(response)
         
         self.results.append({
             'test_name': f"{test_case['type']} - {test_case['description']}",
@@ -1266,68 +1263,8 @@ class ReportGenerator:
             'passed': passed,
             'error': response.get('error'),
             'response_time': response.get('response_time', 0),
-            'request': test_case['request'],
-            'response_data': formatted_response,
-            'response_headers': response.get('headers', {}),
-            'raw_response': response  # Keep raw response for debugging
+            'request': test_case['request']
         })
-
-    def _format_response_data(self, response: Dict[str, Any]) -> str:
-        """Format response data for display in HTML report"""
-        if response.get('error'):
-            return f"ERROR: {response['error']}"
-        
-        if response.get('data'):
-            try:
-                if isinstance(response['data'], dict):
-                    # Pretty format JSON with syntax highlighting hints
-                    formatted = json.dumps(response['data'], indent=2, ensure_ascii=False)
-                    # Truncate very long responses for better UX
-                    if len(formatted) > 5000:
-                        lines = formatted.split('\n')
-                        if len(lines) > 100:
-                            truncated = '\n'.join(lines[:100])
-                            return f"{truncated}\n\n... (Response truncated - showing first 100 lines of {len(lines)} total lines)"
-                        else:
-                            return f"{formatted[:5000]}\n\n... (Response truncated - showing first 5000 characters)"
-                    return formatted
-                elif isinstance(response['data'], str):
-                    # Try to parse as JSON for pretty formatting
-                    try:
-                        parsed = json.loads(response['data'])
-                        formatted = json.dumps(parsed, indent=2, ensure_ascii=False)
-                        # Apply same truncation logic
-                        if len(formatted) > 5000:
-                            return f"{formatted[:5000]}\n\n... (Response truncated)"
-                        return formatted
-                    except json.JSONDecodeError:
-                        # Return as-is if not JSON, but truncate if too long
-                        if len(response['data']) > 2000:
-                            return f"{response['data'][:2000]}\n\n... (Response truncated)"
-                        return response['data']
-                else:
-                    return str(response['data'])
-            except Exception:
-                return str(response.get('data', 'No response data'))
-        
-        # Handle different status codes with helpful messages
-        status = response.get('status', 'Unknown')
-        if status == 0:
-            return "Connection failed - No response received"
-        elif status in [204, 304]:
-            return f"Status: {status} - No content (this is normal)"
-        else:
-            return f"Status: {status} - No response body"
-
-    def _get_response_size(self, response_data: str) -> str:
-        """Get human-readable response size"""
-        size_bytes = len(response_data.encode('utf-8'))
-        if size_bytes < 1024:
-            return f"{size_bytes} bytes"
-        elif size_bytes < 1024 * 1024:
-            return f"{size_bytes / 1024:.1f} KB"
-        else:
-            return f"{size_bytes / (1024 * 1024):.1f} MB"
 
     def _is_expected_result(self, actual_status: int, expected_status: int, test_type: str) -> bool:
         """Check if result matches expectations"""
@@ -1393,13 +1330,6 @@ class ReportGenerator:
         if security_tests:
             security_passed = sum(1 for r in security_tests if r['passed'])
             print(f'\n🔒 Security Test Results: {security_passed}/{len(security_tests)} passed')
-        
-        print(f'\n📄 HTML Report Features:')
-        print(f'  • Expandable cURL commands for each test')
-        print(f'  • Complete API responses with headers and body')
-        print(f'  • Response time and size information')
-        print(f'  • Color-coded status indicators')
-        print(f'  • Mobile-responsive design')
 
     def generate_html_report(self, original_curl: str):
         """Generate enhanced HTML report"""
@@ -1449,80 +1379,14 @@ class ReportGenerator:
                     status_class = 'error'
                 
                 curl_command = self._generate_curl_command(result['request'])
-                response_data = result.get('response_data', 'No response data')
-                response_headers = result.get('response_headers', {})
-                response_size = self._get_response_size(response_data)
-                
-                # Format response headers for display
-                formatted_headers = []
-                important_headers = ['content-type', 'content-length', 'server', 'x-powered-by', 'cache-control']
-                
-                # Show important headers first
-                for header in important_headers:
-                    for key, value in response_headers.items():
-                        if key.lower() == header:
-                            formatted_headers.append(f"{key}: {value}")
-                
-                # Add remaining headers
-                for key, value in response_headers.items():
-                    header_line = f"{key}: {value}"
-                    if header_line not in formatted_headers:
-                        formatted_headers.append(header_line)
-                
-                response_headers_text = "\n".join(formatted_headers) if formatted_headers else "No response headers"
-                
-                # Determine response status color
-                response_status = result['actual']
-                if response_status == 0:
-                    response_class = 'error'
-                    status_text_detail = 'Connection Failed'
-                elif 200 <= response_status < 300:
-                    response_class = 'success'
-                    status_text_detail = 'Success'
-                elif 300 <= response_status < 400:
-                    response_class = 'info'
-                    status_text_detail = 'Redirect'
-                elif 400 <= response_status < 500:
-                    response_class = 'client-error'
-                    status_text_detail = 'Client Error'
-                elif 500 <= response_status:
-                    response_class = 'server-error'
-                    status_text_detail = 'Server Error'
-                else:
-                    response_class = 'info'
-                    status_text_detail = 'Unknown'
                 
                 table_rows.append(f'''
                 <tr>
                     <td class="description">{html.escape(result["description"])}</td>
                     <td class="curl-cell">
                         <details>
-                            <summary>📋 View cURL</summary>
+                            <summary>View cURL</summary>
                             <pre class="curl-code">{html.escape(curl_command)}</pre>
-                        </details>
-                    </td>
-                    <td class="response-cell">
-                        <details>
-                            <summary class="response-summary">📄 View Response</summary>
-                            <div class="response-container">
-                                <div class="response-status">
-                                    <span class="status-badge {response_class}">
-                                        {response_status} - {status_text_detail}
-                                    </span>
-                                    <div class="response-meta">
-                                        <span class="response-time">{result["response_time"]:.2f}s</span>
-                                        <span class="response-size">{response_size}</span>
-                                    </div>
-                                </div>
-                                <div class="response-section">
-                                    <h4>📋 Response Headers ({len(response_headers)}):</h4>
-                                    <pre class="response-headers">{html.escape(response_headers_text)}</pre>
-                                </div>
-                                <div class="response-section">
-                                    <h4>📄 Response Body:</h4>
-                                    <pre class="response-body">{html.escape(response_data)}</pre>
-                                </div>
-                            </div>
                         </details>
                     </td>
                     <td>{result["expected"]}</td>
@@ -1547,7 +1411,6 @@ class ReportGenerator:
                             <tr>
                                 <th>Description</th>
                                 <th>cURL Command</th>
-                                <th>API Response</th>
                                 <th>Expected</th>
                                 <th>Actual</th>
                                 <th>Response Time</th>
@@ -1711,7 +1574,6 @@ class ReportGenerator:
         .status.error {{ background: #d5dbdb; color: #566573; }}
         .description {{ max-width: 300px; word-wrap: break-word; }}
         .curl-cell {{ max-width: 200px; }}
-        .response-cell {{ max-width: 250px; }}
         .curl-code {{ 
             background: #2c3e50; 
             color: #ecf0f1; 
@@ -1723,99 +1585,6 @@ class ReportGenerator:
             white-space: pre-wrap;
             word-break: break-all;
         }}
-        .response-container {{
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 10px;
-            max-width: 400px;
-        }}
-        .response-status {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #dee2e6;
-        }}
-        .response-meta {{
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }}
-        .status-badge {{
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 600;
-        }}
-        .status-badge.success {{ background: #d4edda; color: #155724; }}
-        .status-badge.client-error {{ background: #f8d7da; color: #721c24; }}
-        .status-badge.server-error {{ background: #f5c6cb; color: #721c24; }}
-        .status-badge.error {{ background: #d6d8db; color: #383d41; }}
-        .status-badge.info {{ background: #d1ecf1; color: #0c5460; }}
-        .response-time {{
-            font-size: 0.8em;
-            color: #6c757d;
-            background: #e9ecef;
-            padding: 3px 8px;
-            border-radius: 8px;
-        }}
-        .response-size {{
-            font-size: 0.8em;
-            color: #6c757d;
-            background: #f8f9fa;
-            padding: 3px 8px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }}; }}
-        .response-time {{
-            font-size: 0.8em;
-            color: #6c757d;
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 8px;
-        }}
-        .response-size {{
-            font-size: 0.8em;
-            color: #6c757d;
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }}
-        .response-section {{
-            margin-bottom: 15px;
-        }}
-        .response-section h4 {{
-            margin: 0 0 8px 0;
-            font-size: 0.9em;
-            color: #495057;
-            font-weight: 600;
-        }}
-        .response-headers {{
-            background: #495057;
-            color: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            max-height: 120px;
-            overflow-y: auto;
-            margin: 0;
-            white-space: pre-wrap;
-        }}
-        .response-body {{
-            background: #343a40;
-            color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin: 0;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }}
         details {{ cursor: pointer; }}
         summary {{ 
             background: #3498db; 
@@ -1824,26 +1593,8 @@ class ReportGenerator:
             border-radius: 5px; 
             font-size: 0.8em; 
             outline: none;
-            transition: background 0.2s ease;
         }}
         summary:hover {{ background: #2980b9; }}
-        .response-summary {{
-            background: #28a745;
-        }}
-        .response-summary:hover {{
-            background: #218838;
-        }}
-        summary::marker {{
-            display: none;
-        }}
-        summary::before {{
-            content: "▶ ";
-            display: inline-block;
-            transition: transform 0.2s ease;
-        }}
-        details[open] summary::before {{
-            transform: rotate(90deg);
-        }}
         .footer {{ 
             background: #2c3e50; 
             color: white; 
@@ -1868,18 +1619,6 @@ class ReportGenerator:
             .original-curl {{ margin: 10px; padding: 15px; font-size: 12px; }}
             .curl-code {{ font-size: 10px; }}
             .category-section {{ margin: 10px; }}
-            .response-container {{ max-width: 300px; }}
-            .response-body {{ max-height: 150px; }}
-            .response-headers {{ max-height: 100px; }}
-            .curl-cell, .response-cell {{ max-width: 150px; }}
-        }}
-        @media (max-width: 480px) {{
-            .stats-grid {{ grid-template-columns: 1fr; }}
-            .category-header {{ flex-direction: column; text-align: center; }}
-            .category-header h3 {{ margin-bottom: 10px; }}
-            .response-container {{ max-width: 250px; }}
-            .response-status {{ flex-direction: column; gap: 5px; }}
-            th, td {{ padding: 6px 4px; font-size: 0.7em; }}
         }}
     </style>
 </head>
@@ -2042,22 +1781,15 @@ class CLIInterface:
         print('  🔒 Advanced security vulnerability testing')
         print('  🎯 Enhanced edge case and boundary testing')
         print('  📊 Real HTTP request execution with detailed analysis')
-        print('  📄 Rich HTML reports with expandable cURL & API responses')
+        print('  📄 Rich HTML reports with category organization')
         print('  ⏱️  Performance analysis and response time tracking')
         print('  🛡️  Authentication and authorization testing')
         print('  📋 Format validation and structure testing')
         print('  🔍 Nested field and array validation')
         print('  💾 Large payload and stress testing')
         print('')
-        print('🆕 New in this version:')
-        print('  📱 Complete API response viewing in HTML reports')
-        print('  📊 Response size and metadata display')
-        print('  🎨 Beautiful expandable sections for requests & responses')
-        print('  📱 Mobile-responsive design')
-        print('')
         print('💡 This enhanced version generates significantly more test cases')
         print('   covering all aspects of API security and functionality.')
-        print('   Each test result includes both the cURL request and API response!')
         print('')
 
 
