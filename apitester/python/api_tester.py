@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
 """
-Universal REST API Testing Tool
-Production-Ready Fixed Python Version
-Built by Nitin Sharma
+Enhanced Universal REST API Testing Tool
+Comprehensive Test Case Generation
+Built by Enhanced Version
 
-Clean implementation with working functionality:
-- User input for expected response and status code
-- Simple, clean HTML reports
-- No broken JavaScript features
-- Production-ready error handling
+Features:
+- Comprehensive test case coverage
+- Advanced payload manipulation
+- Better data type testing
+- Enhanced security testing
+- Boundary value analysis
+- Real-world scenario testing
 """
 
 import requests
@@ -25,6 +27,8 @@ import random
 from typing import Dict, List, Any, Optional
 import os
 import html
+import uuid
+from itertools import combinations
 
 
 class CurlParser:
@@ -51,6 +55,7 @@ class CurlParser:
 
         # Extract URL - Multiple patterns for robustness
         url_patterns = [
+            r"--location\s+--request\s+\w+\s+['\"]([^'\"]+)['\"]",
             r"--location\s+['\"]([^'\"]+)['\"]",
             r"curl\s+--location\s+['\"]([^'\"]+)['\"]",
             r"curl\s+['\"]([^'\"]+)['\"]",
@@ -70,7 +75,7 @@ class CurlParser:
             print('❌ Could not find URL in curl command')
 
         # Extract method - check for explicit method first
-        method_match = re.search(r'-X\s+(\w+)|--request\s+(\w+)', cleaned_command, re.IGNORECASE)
+        method_match = re.search(r'--request\s+(\w+)|-X\s+(\w+)', cleaned_command, re.IGNORECASE)
         if method_match:
             parsed['method'] = (method_match.group(1) or method_match.group(2)).upper()
             print(f'✅ Found explicit method: {parsed["method"]}')
@@ -105,12 +110,12 @@ class CurlParser:
         
         # Multiple data extraction patterns - more comprehensive
         data_patterns = [
+            r"--data-raw\s+'([^']+(?:'[^']*'[^']*)*?)'",
+            r'--data-raw\s+"([^"]+(?:"[^"]*"[^"]*)*?)"',
             r"--data\s+'([^']+(?:'[^']*'[^']*)*?)'",
             r'--data\s+"([^"]+(?:"[^"]*"[^"]*)*?)"',
-            r"--data\s+(['\"])([^'\"]*(?:[^'\"\\]|\\.|'[^'\"]*'|\"[^'\"]*\")*?)\1",
             r"-d\s+'([^']+(?:'[^']*'[^']*)*?)'",
             r'-d\s+"([^"]+(?:"[^"]*"[^"]*)*?)"',
-            r'--data-raw\s+[\'"]([^\'"]+)[\'"]',
             r'--data-binary\s+[\'"]([^\'"]+)[\'"]'
         ]
 
@@ -118,27 +123,19 @@ class CurlParser:
             match = re.search(pattern, cleaned_command, re.DOTALL)
             
             if match:
-                # Get the data string - handle different capture groups
-                if len(match.groups()) >= 2 and match.group(2):
-                    data_str = match.group(2).strip()
-                else:
-                    data_str = match.group(1).strip()
+                data_str = match.group(1).strip()
                 
                 print(f'📝 Pattern {i + 1} matched')
                 print(f'📝 Raw data extracted: {data_str[:200]}...')
                 
                 # Remove escape characters that might be from shell escaping
                 data_str = data_str.replace('\\"', '"').replace("\\'", "'")
-                
-                # Remove any trailing/leading whitespace and clean up formatting
                 data_str = data_str.strip()
                 
                 try:
                     # Try to parse as JSON first
                     parsed = json.loads(data_str)
                     print(f'✅ Successfully parsed JSON')
-                    if isinstance(parsed, dict):
-                        print(f'✅ JSON object with keys: {list(parsed.keys())}')
                     return parsed
                 except json.JSONDecodeError as e:
                     print(f'⚠️ JSON parse error: {e}')
@@ -158,35 +155,67 @@ class CurlParser:
         return None
 
 
-class TestCaseGenerator:
-    """Generates comprehensive test cases"""
+class EnhancedTestCaseGenerator:
+    """Enhanced test case generator with comprehensive coverage"""
     
     def __init__(self):
         self.security_payloads = [
-            {'name': 'XSS', 'payload': '<script>alert("xss")</script>'},
-            {'name': 'SQL', 'payload': "'; DROP TABLE users; --"},
-            {'name': 'NoSQL', 'payload': '{"$gt": ""}'},
-            {'name': 'Command', 'payload': '; rm -rf /'},
-            {'name': 'Path', 'payload': '../../../etc/passwd'},
-            {'name': 'LDAP', 'payload': '*)(uid=*))(|(uid=*'},
-            {'name': 'XXE', 'payload': '<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><test>&xxe;</test>'}
+            {'name': 'XSS Basic', 'payload': '<script>alert("xss")</script>'},
+            {'name': 'XSS Advanced', 'payload': '"><script>alert(String.fromCharCode(88,83,83))</script>'},
+            {'name': 'SQL Injection', 'payload': "'; DROP TABLE users; --"},
+            {'name': 'SQL Union', 'payload': "' UNION SELECT null,version(),null--"},
+            {'name': 'NoSQL Injection', 'payload': '{"$gt": ""}'},
+            {'name': 'NoSQL Where', 'payload': '{"$where": "function(){return true}"}'},
+            {'name': 'Command Injection', 'payload': '; rm -rf /'},
+            {'name': 'Command Pipe', 'payload': '| cat /etc/passwd'},
+            {'name': 'Path Traversal', 'payload': '../../../etc/passwd'},
+            {'name': 'Path Windows', 'payload': '..\\..\\..\\windows\\system32\\drivers\\etc\\hosts'},
+            {'name': 'LDAP Injection', 'payload': '*)(uid=*))(|(uid=*'},
+            {'name': 'XXE Attack', 'payload': '<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><test>&xxe;</test>'},
+            {'name': 'SSTI', 'payload': '{{7*7}}'},
+            {'name': 'SSTI Advanced', 'payload': '${7*7}'},
+            {'name': 'Code Injection', 'payload': '__import__("os").system("id")'}
         ]
         
         self.edge_cases = [
-            {'name': 'Long String', 'value': 'A' * 1000},
-            {'name': 'Special Chars', 'value': '!@#$%^&*()_+{}[]|\\:";\'<>?,.`~'},
-            {'name': 'Unicode', 'value': '🚀💻🔥🎯📊✅❌🧪'},
+            {'name': 'Very Long String', 'value': 'A' * 10000},
+            {'name': 'Special Characters', 'value': '!@#$%^&*()_+{}[]|\\:";\'<>?,.`~'},
+            {'name': 'Unicode Emojis', 'value': '🚀💻🔥🎯📊✅❌🧪'},
+            {'name': 'Unicode Mixed', 'value': 'Test-测试-тест-テスト-🌟'},
             {'name': 'Empty String', 'value': ''},
-            {'name': 'Whitespace', 'value': '   '},
+            {'name': 'Only Whitespace', 'value': '   '},
+            {'name': 'Tab and Newlines', 'value': '\t\n\r\n'},
             {'name': 'Null String', 'value': 'null'},
-            {'name': 'Boolean String', 'value': 'true'},
+            {'name': 'Boolean True', 'value': 'true'},
+            {'name': 'Boolean False', 'value': 'false'},
             {'name': 'Number String', 'value': '12345'},
-            {'name': 'Very Long', 'value': 'X' * 10000},
-            {'name': 'Newlines', 'value': 'line1\nline2\nline3'}
+            {'name': 'Float String', 'value': '123.456'},
+            {'name': 'Negative Number', 'value': '-999'},
+            {'name': 'Scientific Notation', 'value': '1.23e-10'},
+            {'name': 'Extremely Long', 'value': 'X' * 100000},
+            {'name': 'Control Characters', 'value': '\x00\x01\x02\x03\x04\x05'},
+            {'name': 'High Unicode', 'value': '\u2028\u2029\ufeff'},
+            {'name': 'JSON Injection', 'value': '","malicious":"value'},
+            {'name': 'Format String', 'value': '%s%s%s%s%s%s%s%s%s%s'},
+            {'name': 'Buffer Overflow', 'value': 'A' * 65536}
         ]
 
-    def generate_test_cases(self, parsed_curl: Dict[str, Any], expected_status: int = 200) -> List[Dict[str, Any]]:
-        """Generate comprehensive test cases"""
+        self.type_variations = {
+            'string': [123, True, False, [], {}, None, 3.14],
+            'number': ['string', True, False, [], {}, None, '123abc'],
+            'boolean': ['true', 'false', 1, 0, [], {}, None],
+            'array': ['string', 123, True, {}, None],
+            'object': ['string', 123, True, [], None]
+        }
+
+        self.boundary_values = {
+            'integers': [0, 1, -1, 2147483647, -2147483648, 4294967295, -4294967296],
+            'floats': [0.0, 1.0, -1.0, 3.14159, 1.7976931348623157e+308, 2.2250738585072014e-308],
+            'strings': ['', 'a', 'A' * 255, 'A' * 256, 'A' * 65535, 'A' * 65536]
+        }
+
+    def generate_comprehensive_test_cases(self, parsed_curl: Dict[str, Any], expected_status: int = 200) -> List[Dict[str, Any]]:
+        """Generate comprehensive test cases covering all scenarios"""
         print('\n🔧 Generating comprehensive test cases...')
         print(f'📊 Target: {parsed_curl["method"]} {parsed_curl["url"]}')
         print(f'📊 Expected Status: {expected_status}')
@@ -195,307 +224,513 @@ class TestCaseGenerator:
         test_cases = []
         base_request = copy.deepcopy(parsed_curl)
 
-        # 1. POSITIVE TEST - Always first
-        test_cases.append({
-            'type': 'Positive',
+        # 1. POSITIVE TESTS
+        test_cases.extend(self._generate_positive_tests(base_request, expected_status))
+        
+        # 2. FIELD VALIDATION TESTS
+        if base_request.get('data') and isinstance(base_request['data'], dict):
+            test_cases.extend(self._generate_field_validation_tests(base_request))
+            test_cases.extend(self._generate_required_field_tests(base_request))
+            test_cases.extend(self._generate_type_validation_tests(base_request))
+            test_cases.extend(self._generate_null_empty_tests(base_request))
+            test_cases.extend(self._generate_nested_field_tests(base_request))
+            test_cases.extend(self._generate_array_field_tests(base_request))
+            
+        # 3. SECURITY TESTS
+        test_cases.extend(self._generate_security_tests(base_request))
+        
+        # 4. EDGE CASE TESTS
+        test_cases.extend(self._generate_edge_case_tests(base_request))
+        
+        # 5. BOUNDARY TESTS
+        test_cases.extend(self._generate_boundary_tests(base_request))
+        
+        # 6. FORMAT TESTS
+        test_cases.extend(self._generate_format_tests(base_request))
+        
+        # 7. HEADER TESTS
+        test_cases.extend(self._generate_header_tests(base_request))
+        
+        # 8. METHOD TESTS
+        test_cases.extend(self._generate_method_tests(base_request))
+        
+        # 9. URL TESTS
+        test_cases.extend(self._generate_url_tests(base_request))
+        
+        # 10. AUTHENTICATION TESTS
+        test_cases.extend(self._generate_auth_tests(base_request))
+        
+        # 11. PERFORMANCE TESTS
+        test_cases.extend(self._generate_performance_tests(base_request))
+
+        print(f'🎯 Generated {len(test_cases)} total test cases\n')
+        return test_cases
+
+    def _generate_positive_tests(self, base_request: Dict[str, Any], expected_status: int) -> List[Dict[str, Any]]:
+        """Generate positive test cases"""
+        tests = []
+        
+        # Original valid request
+        tests.append({
+            'type': 'Positive - Original',
             'description': 'Valid request with original data',
             'request': copy.deepcopy(base_request),
             'expected_status': expected_status,
             'expected_result': f'{expected_status} {self._get_status_text(expected_status)}'
         })
-
-        # Generate different types of tests based on data availability
-        if base_request.get('data') and isinstance(base_request['data'], dict):
-            print('📋 Generating tests for JSON object data...')
-            self._generate_missing_field_tests(base_request, test_cases)
-            self._generate_type_validation_tests(base_request, test_cases)
-            self._generate_null_empty_tests(base_request, test_cases)
-            self._generate_security_tests(base_request, test_cases)
-            self._generate_edge_case_tests(base_request, test_cases)
-            self._generate_boundary_tests(base_request, test_cases)
-            
-        elif base_request.get('data'):
-            print('📋 Generating tests for non-object data...')
-            self._generate_data_format_tests(base_request, test_cases)
-
-        # Generate header tests
-        if base_request.get('headers'):
-            print('📋 Generating header tests...')
-            self._generate_header_tests(base_request, test_cases)
-
-        # Generate method tests
-        print('📋 Generating HTTP method tests...')
-        self._generate_method_tests(base_request, test_cases)
         
-        # Generate URL tests
-        print('📋 Generating URL tests...')
-        self._generate_url_tests(base_request, test_cases)
+        # Minimal valid request (if has optional fields)
+        if base_request.get('data') and isinstance(base_request['data'], dict):
+            minimal_data = self._create_minimal_valid_payload(base_request['data'])
+            if minimal_data != base_request['data']:
+                tests.append({
+                    'type': 'Positive - Minimal',
+                    'description': 'Minimal valid request with only required fields',
+                    'request': {**base_request, 'data': minimal_data},
+                    'expected_status': expected_status,
+                    'expected_result': f'{expected_status} {self._get_status_text(expected_status)}'
+                })
+        
+        return tests
 
-        print(f'🎯 Generated {len(test_cases)} total test cases\n')
-        return test_cases
-
-    def _generate_missing_field_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate tests for missing required fields"""
+    def _generate_field_validation_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive field validation tests"""
+        tests = []
         data = base_request['data']
         
-        # Missing top-level fields
-        for field in data.keys():
+        if not isinstance(data, dict):
+            return tests
+        
+        # Test each field individually
+        for field_name, field_value in data.items():
+            # Test missing field
             modified_data = copy.deepcopy(data)
-            del modified_data[field]
-            
-            test_cases.append({
+            del modified_data[field_name]
+            tests.append({
                 'type': 'Negative - Missing Field',
-                'description': f'Missing required field: {field}',
+                'description': f'Missing required field: {field_name}',
                 'request': {**base_request, 'data': modified_data},
                 'expected_status': 400,
                 'expected_result': '400 Bad Request'
             })
+            
+            # Test field with different data types
+            if isinstance(field_value, str):
+                wrong_types = [123, True, [], {}, None]
+            elif isinstance(field_value, (int, float)):
+                wrong_types = ["string", True, [], {}, None]
+            elif isinstance(field_value, bool):
+                wrong_types = ["string", 123, [], {}, None]
+            elif isinstance(field_value, list):
+                wrong_types = ["string", 123, True, {}, None]
+            elif isinstance(field_value, dict):
+                wrong_types = ["string", 123, True, [], None]
+            else:
+                wrong_types = ["string", 123, True, [], {}]
+            
+            for wrong_type in wrong_types[:3]:  # Test first 3 wrong types
+                modified_data = copy.deepcopy(data)
+                modified_data[field_name] = wrong_type
+                tests.append({
+                    'type': 'Negative - Wrong Type',
+                    'description': f'Wrong type for {field_name}: {type(wrong_type).__name__} instead of {type(field_value).__name__}',
+                    'request': {**base_request, 'data': modified_data},
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+        
+        return tests
 
-        # Missing nested fields (if any)
-        for field, value in data.items():
-            if isinstance(value, dict) and value:
-                for nested_field in list(value.keys())[:2]:  # Limit to first 2 nested fields
+    def _generate_required_field_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate tests for missing combinations of fields"""
+        tests = []
+        data = base_request['data']
+        
+        if not isinstance(data, dict) or len(data) <= 1:
+            return tests
+        
+        fields = list(data.keys())
+        
+        # Test missing pairs of fields
+        for field1, field2 in list(combinations(fields, 2))[:5]:  # Test first 5 combinations
+            modified_data = copy.deepcopy(data)
+            del modified_data[field1]
+            del modified_data[field2]
+            tests.append({
+                'type': 'Negative - Missing Multiple',
+                'description': f'Missing multiple fields: {field1}, {field2}',
+                'request': {**base_request, 'data': modified_data},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+        
+        # Test with only one field present
+        for field in fields[:3]:  # Test first 3 fields
+            modified_data = {field: data[field]}
+            tests.append({
+                'type': 'Negative - Only One Field',
+                'description': f'Only one field present: {field}',
+                'request': {**base_request, 'data': modified_data},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+        
+        return tests
+
+    def _generate_type_validation_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive type validation tests"""
+        tests = []
+        data = base_request['data']
+        
+        if not isinstance(data, dict):
+            return tests
+        
+        for field_name, field_value in list(data.items())[:5]:  # Test first 5 fields
+            field_type = type(field_value).__name__
+            
+            if field_type in self.type_variations:
+                for wrong_value in self.type_variations[field_type][:4]:  # Test first 4 variations
                     modified_data = copy.deepcopy(data)
-                    del modified_data[field][nested_field]
-                    
-                    test_cases.append({
-                        'type': 'Negative - Missing Nested',
-                        'description': f'Missing nested field: {field}.{nested_field}',
+                    modified_data[field_name] = wrong_value
+                    tests.append({
+                        'type': 'Negative - Type Validation',
+                        'description': f'Invalid type for {field_name}: {type(wrong_value).__name__} (expected {field_type})',
                         'request': {**base_request, 'data': modified_data},
                         'expected_status': 400,
                         'expected_result': '400 Bad Request'
                     })
+        
+        return tests
 
-    def _generate_type_validation_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate tests for type validation"""
+    def _generate_null_empty_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate null and empty value tests"""
+        tests = []
         data = base_request['data']
         
-        # Type validation for top-level fields
-        for field, value in data.items():
-            if isinstance(value, str):
-                # String -> Number
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = 12345
-                test_cases.append({
-                    'type': 'Negative - Type Mismatch',
-                    'description': f'Wrong type for {field} (number instead of string)',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-                
-                # String -> Array
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = ["invalid", "array"]
-                test_cases.append({
-                    'type': 'Negative - Type Mismatch',
-                    'description': f'Wrong type for {field} (array instead of string)',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-                
-            elif isinstance(value, (int, float)):
-                # Number -> String
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = "not_a_number"
-                test_cases.append({
-                    'type': 'Negative - Type Mismatch',
-                    'description': f'Wrong type for {field} (string instead of number)',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-                
-                # Number -> Boolean
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = True
-                test_cases.append({
-                    'type': 'Negative - Type Mismatch',
-                    'description': f'Wrong type for {field} (boolean instead of number)',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-
-        # Type validation for nested fields
-        for field, value in data.items():
-            if isinstance(value, dict):
-                for nested_field, nested_value in list(value.items())[:2]:  # Limit nested tests
-                    if isinstance(nested_value, str):
-                        modified_data = copy.deepcopy(data)
-                        modified_data[field][nested_field] = 99999
-                        test_cases.append({
-                            'type': 'Negative - Nested Type',
-                            'description': f'Wrong type for {field}.{nested_field} (number instead of string)',
-                            'request': {**base_request, 'data': modified_data},
-                            'expected_status': 400,
-                            'expected_result': '400 Bad Request'
-                        })
-
-    def _generate_null_empty_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate tests for null and empty values"""
-        data = base_request['data']
+        if not isinstance(data, dict):
+            return tests
         
-        # Null values
-        for field in list(data.keys())[:3]:  # Test first 3 fields
+        for field_name in list(data.keys())[:5]:  # Test first 5 fields
+            # Test null value
             modified_data = copy.deepcopy(data)
-            modified_data[field] = None
-            test_cases.append({
+            modified_data[field_name] = None
+            tests.append({
                 'type': 'Negative - Null Value',
-                'description': f'Null value for {field}',
+                'description': f'Null value for {field_name}',
                 'request': {**base_request, 'data': modified_data},
                 'expected_status': 400,
                 'expected_result': '400 Bad Request'
             })
-
-        # Empty strings
-        for field, value in list(data.items())[:3]:
-            if isinstance(value, str):
+            
+            # Test empty string (for string fields)
+            if isinstance(data[field_name], str):
                 modified_data = copy.deepcopy(data)
-                modified_data[field] = ""
-                test_cases.append({
-                    'type': 'Negative - Empty Value',
-                    'description': f'Empty string for {field}',
+                modified_data[field_name] = ""
+                tests.append({
+                    'type': 'Negative - Empty String',
+                    'description': f'Empty string for {field_name}',
                     'request': {**base_request, 'data': modified_data},
                     'expected_status': 400,
                     'expected_result': '400 Bad Request'
                 })
-
-        # Empty object
-        test_cases.append({
-            'type': 'Negative - Empty Object',
+            
+            # Test empty array (for array fields)
+            if isinstance(data[field_name], list):
+                modified_data = copy.deepcopy(data)
+                modified_data[field_name] = []
+                tests.append({
+                    'type': 'Negative - Empty Array',
+                    'description': f'Empty array for {field_name}',
+                    'request': {**base_request, 'data': modified_data},
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+            
+            # Test empty object (for object fields)
+            if isinstance(data[field_name], dict):
+                modified_data = copy.deepcopy(data)
+                modified_data[field_name] = {}
+                tests.append({
+                    'type': 'Negative - Empty Object',
+                    'description': f'Empty object for {field_name}',
+                    'request': {**base_request, 'data': modified_data},
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+        
+        # Test completely empty payload
+        tests.append({
+            'type': 'Negative - Empty Payload',
             'description': 'Completely empty JSON object',
             'request': {**base_request, 'data': {}},
             'expected_status': 400,
             'expected_result': '400 Bad Request'
         })
+        
+        return tests
 
-    def _generate_security_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate security vulnerability tests"""
+    def _generate_nested_field_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate tests for nested objects"""
+        tests = []
         data = base_request['data']
+        
+        if not isinstance(data, dict):
+            return tests
+        
+        # Find nested objects
+        for field_name, field_value in data.items():
+            if isinstance(field_value, dict) and field_value:
+                # Test missing nested fields
+                for nested_field in list(field_value.keys())[:3]:  # Test first 3 nested fields
+                    modified_data = copy.deepcopy(data)
+                    del modified_data[field_name][nested_field]
+                    tests.append({
+                        'type': 'Negative - Missing Nested',
+                        'description': f'Missing nested field: {field_name}.{nested_field}',
+                        'request': {**base_request, 'data': modified_data},
+                        'expected_status': 400,
+                        'expected_result': '400 Bad Request'
+                    })
+                
+                # Test wrong types in nested fields
+                for nested_field, nested_value in list(field_value.items())[:2]:  # Test first 2 nested fields
+                    if isinstance(nested_value, str):
+                        wrong_values = [123, True, [], {}]
+                    elif isinstance(nested_value, (int, float)):
+                        wrong_values = ["string", True, [], {}]
+                    else:
+                        wrong_values = ["string", 123, True]
+                    
+                    for wrong_value in wrong_values[:2]:  # Test first 2 wrong values
+                        modified_data = copy.deepcopy(data)
+                        modified_data[field_name][nested_field] = wrong_value
+                        tests.append({
+                            'type': 'Negative - Nested Type',
+                            'description': f'Wrong type for {field_name}.{nested_field}',
+                            'request': {**base_request, 'data': modified_data},
+                            'expected_status': 400,
+                            'expected_result': '400 Bad Request'
+                        })
+        
+        return tests
+
+    def _generate_array_field_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate tests for array fields"""
+        tests = []
+        data = base_request['data']
+        
+        if not isinstance(data, dict):
+            return tests
+        
+        # Find array fields
+        for field_name, field_value in data.items():
+            if isinstance(field_value, list) and field_value:
+                # Test with wrong array element types
+                if field_value:
+                    first_element = field_value[0]
+                    if isinstance(first_element, dict):
+                        # Test missing required fields in array elements
+                        if first_element:
+                            for key in list(first_element.keys())[:2]:  # Test first 2 keys
+                                modified_data = copy.deepcopy(data)
+                                if modified_data[field_name]:
+                                    del modified_data[field_name][0][key]
+                                    tests.append({
+                                        'type': 'Negative - Array Element',
+                                        'description': f'Missing {key} in {field_name} array element',
+                                        'request': {**base_request, 'data': modified_data},
+                                        'expected_status': 400,
+                                        'expected_result': '400 Bad Request'
+                                    })
+                    
+                    # Test with wrong element types
+                    modified_data = copy.deepcopy(data)
+                    if isinstance(first_element, str):
+                        modified_data[field_name][0] = 123
+                    elif isinstance(first_element, (int, float)):
+                        modified_data[field_name][0] = "string"
+                    elif isinstance(first_element, dict):
+                        modified_data[field_name][0] = "string"
+                    
+                    tests.append({
+                        'type': 'Negative - Array Type',
+                        'description': f'Wrong type for {field_name} array element',
+                        'request': {**base_request, 'data': modified_data},
+                        'expected_status': 400,
+                        'expected_result': '400 Bad Request'
+                    })
+                
+                # Test with too many array elements
+                if len(field_value) < 100:  # Only if current array is not already large
+                    modified_data = copy.deepcopy(data)
+                    # Add many duplicate elements
+                    modified_data[field_name] = field_value * 50
+                    tests.append({
+                        'type': 'Negative - Array Size',
+                        'description': f'Too many elements in {field_name} array',
+                        'request': {**base_request, 'data': modified_data},
+                        'expected_status': 400,
+                        'expected_result': '400 Bad Request'
+                    })
+        
+        return tests
+
+    def _generate_security_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive security tests"""
+        tests = []
+        
+        if not base_request.get('data'):
+            return tests
         
         # Find string fields for security testing
-        string_fields = []
-        for field, value in data.items():
-            if isinstance(value, str):
-                string_fields.append(field)
-            elif isinstance(value, dict):
-                for nested_field, nested_value in value.items():
-                    if isinstance(nested_value, str):
-                        string_fields.append(f"{field}.{nested_field}")
+        string_fields = self._find_string_fields(base_request['data'])
         
         # Apply security payloads to string fields
-        for field in string_fields[:2]:  # Test first 2 string fields
-            for payload in self.security_payloads:
-                modified_data = copy.deepcopy(data)
+        for field_path in string_fields[:3]:  # Test first 3 string fields
+            for payload in self.security_payloads[:10]:  # Test first 10 security payloads
+                modified_data = copy.deepcopy(base_request['data'])
+                self._set_nested_value(modified_data, field_path, payload['payload'])
                 
-                if '.' in field:
-                    # Handle nested field
-                    parent, child = field.split('.', 1)
-                    if parent in modified_data and isinstance(modified_data[parent], dict):
-                        modified_data[parent][child] = payload['payload']
-                else:
-                    modified_data[field] = payload['payload']
-                
-                test_cases.append({
+                tests.append({
                     'type': 'Security Test',
-                    'description': f'{payload["name"]} injection in {field}',
+                    'description': f'{payload["name"]} injection in {field_path}',
                     'request': {**base_request, 'data': modified_data},
                     'expected_status': 400,
                     'expected_result': '400 Bad Request'
                 })
+        
+        # Test with malformed JSON in string fields
+        for field_path in string_fields[:2]:  # Test first 2 string fields
+            modified_data = copy.deepcopy(base_request['data'])
+            self._set_nested_value(modified_data, field_path, '{"malformed": json}')
+            
+            tests.append({
+                'type': 'Security Test',
+                'description': f'Malformed JSON injection in {field_path}',
+                'request': {**base_request, 'data': modified_data},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+        
+        return tests
 
-    def _generate_edge_case_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate edge case tests"""
-        data = base_request['data']
+    def _generate_edge_case_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive edge case tests"""
+        tests = []
+        
+        if not base_request.get('data'):
+            return tests
         
         # Find string fields for edge case testing
-        string_fields = [field for field, value in data.items() if isinstance(value, str)]
+        string_fields = self._find_string_fields(base_request['data'])
         
         if string_fields:
-            field = string_fields[0]  # Test first string field
-            for edge_case in self.edge_cases[:5]:  # Test first 5 edge cases
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = edge_case['value']
+            field_path = string_fields[0]  # Test first string field
+            for edge_case in self.edge_cases[:15]:  # Test first 15 edge cases
+                modified_data = copy.deepcopy(base_request['data'])
+                self._set_nested_value(modified_data, field_path, edge_case['value'])
                 
-                test_cases.append({
+                tests.append({
                     'type': 'Edge Case Test',
-                    'description': f'{edge_case["name"]} value for {field}',
+                    'description': f'{edge_case["name"]} value for {field_path}',
                     'request': {**base_request, 'data': modified_data},
                     'expected_status': 400,
                     'expected_result': '400 Bad Request'
                 })
+        
+        return tests
 
-    def _generate_boundary_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate boundary value tests"""
+    def _generate_boundary_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive boundary value tests"""
+        tests = []
         data = base_request['data']
         
-        # Boundary tests for numeric fields
-        for field, value in data.items():
-            if isinstance(value, (int, float)):
-                # Test very large numbers
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = 999999999999999
-                test_cases.append({
-                    'type': 'Boundary Test',
-                    'description': f'Very large number for {field}',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-                
-                # Test negative numbers
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = -999999
-                test_cases.append({
-                    'type': 'Boundary Test',
-                    'description': f'Negative number for {field}',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-                
-                # Test zero
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = 0
-                test_cases.append({
-                    'type': 'Boundary Test',
-                    'description': f'Zero value for {field}',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-
-    def _generate_data_format_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate tests for non-object data"""
-        # Invalid JSON format
-        test_cases.append({
-            'type': 'Negative - Format',
-            'description': 'Invalid JSON format',
-            'request': {**base_request, 'data': '{"invalid": json}'},
-            'expected_status': 400,
-            'expected_result': '400 Bad Request'
-        })
+        if not isinstance(data, dict):
+            return tests
         
-        # Empty data
-        test_cases.append({
-            'type': 'Negative - Format',
-            'description': 'Empty request body',
-            'request': {**base_request, 'data': ''},
-            'expected_status': 400,
-            'expected_result': '400 Bad Request'
-        })
+        # Test boundary values for different data types
+        for field_name, field_value in list(data.items())[:5]:  # Test first 5 fields
+            if isinstance(field_value, (int, float)):
+                boundary_type = 'integers' if isinstance(field_value, int) else 'floats'
+                for boundary in self.boundary_values[boundary_type][:5]:  # Test first 5 boundary values
+                    modified_data = copy.deepcopy(data)
+                    modified_data[field_name] = boundary
+                    tests.append({
+                        'type': 'Boundary Test',
+                        'description': f'Boundary value {boundary} for {field_name}',
+                        'request': {**base_request, 'data': modified_data},
+                        'expected_status': 400,
+                        'expected_result': '400 Bad Request'
+                    })
+            
+            elif isinstance(field_value, str):
+                for boundary in self.boundary_values['strings'][:4]:  # Test first 4 boundary values
+                    modified_data = copy.deepcopy(data)
+                    modified_data[field_name] = boundary
+                    tests.append({
+                        'type': 'Boundary Test',
+                        'description': f'Boundary string length for {field_name}',
+                        'request': {**base_request, 'data': modified_data},
+                        'expected_status': 400,
+                        'expected_result': '400 Bad Request'
+                    })
+        
+        return tests
 
-    def _generate_header_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate header-related tests"""
-        # Missing Content-Type
-        if 'Content-Type' in base_request['headers'] or any(k.lower() == 'content-type' for k in base_request['headers']):
+    def _generate_format_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate format and structure tests"""
+        tests = []
+        
+        # Test invalid JSON formats
+        invalid_formats = [
+            '{"invalid": json}',
+            '{"missing": "quote}',
+            '{"trailing": "comma",}',
+            '{invalid: "key"}',
+            '{"duplicate": "key", "duplicate": "key2"}',
+            '',
+            'not json at all',
+            '[]',  # Array instead of object
+            'null',
+            'true',
+            '123'
+        ]
+        
+        for invalid_format in invalid_formats:
+            tests.append({
+                'type': 'Format Test',
+                'description': f'Invalid JSON format: {invalid_format[:30]}...',
+                'request': {**base_request, 'data': invalid_format},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+        
+        # Test with different content encodings
+        if base_request.get('data') and isinstance(base_request['data'], dict):
+            # Test with extra fields
+            modified_data = copy.deepcopy(base_request['data'])
+            modified_data['extraField'] = 'unexpected'
+            modified_data['anotherExtra'] = 123
+            tests.append({
+                'type': 'Format Test',
+                'description': 'Extra unexpected fields in payload',
+                'request': {**base_request, 'data': modified_data},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+        
+        return tests
+
+    def _generate_header_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate comprehensive header tests"""
+        tests = []
+        
+        # Test missing Content-Type
+        if any(k.lower() == 'content-type' for k in base_request.get('headers', {})):
             no_content_type = copy.deepcopy(base_request)
-            # Remove all variations of Content-Type
             no_content_type['headers'] = {k: v for k, v in no_content_type['headers'].items() 
                                         if k.lower() != 'content-type'}
-            test_cases.append({
+            tests.append({
                 'type': 'Header Test',
                 'description': 'Missing Content-Type header',
                 'request': no_content_type,
@@ -503,52 +738,114 @@ class TestCaseGenerator:
                 'expected_result': '415 Unsupported Media Type'
             })
 
-            # Wrong Content-Type
-            wrong_content_type = copy.deepcopy(base_request)
-            wrong_content_type['headers']['Content-Type'] = 'text/plain'
-            test_cases.append({
-                'type': 'Header Test',
-                'description': 'Invalid Content-Type (text/plain)',
-                'request': wrong_content_type,
-                'expected_status': 415,
-                'expected_result': '415 Unsupported Media Type'
-            })
+            # Test wrong Content-Type values
+            wrong_content_types = [
+                'text/plain',
+                'application/xml',
+                'text/html',
+                'application/x-www-form-urlencoded',
+                'multipart/form-data',
+                'invalid/content-type'
+            ]
             
-            # Another wrong Content-Type
-            wrong_content_type2 = copy.deepcopy(base_request)
-            wrong_content_type2['headers']['Content-Type'] = 'application/xml'
-            test_cases.append({
-                'type': 'Header Test',
-                'description': 'Invalid Content-Type (application/xml)',
-                'request': wrong_content_type2,
-                'expected_status': 415,
-                'expected_result': '415 Unsupported Media Type'
-            })
+            for wrong_type in wrong_content_types:
+                wrong_content_type = copy.deepcopy(base_request)
+                # Update all variations of Content-Type
+                for key in list(wrong_content_type['headers'].keys()):
+                    if key.lower() == 'content-type':
+                        wrong_content_type['headers'][key] = wrong_type
+                        break
+                else:
+                    wrong_content_type['headers']['Content-Type'] = wrong_type
+                
+                tests.append({
+                    'type': 'Header Test',
+                    'description': f'Invalid Content-Type: {wrong_type}',
+                    'request': wrong_content_type,
+                    'expected_status': 415,
+                    'expected_result': '415 Unsupported Media Type'
+                })
 
-        # Missing Authorization (if present in original)
-        if any(k.lower() == 'authorization' for k in base_request['headers']):
+        # Test missing custom headers
+        custom_headers = ['user', 'channel-name', 'city', 'channel-host', 'appversion']
+        for header in custom_headers:
+            if any(k.lower() == header.lower() for k in base_request.get('headers', {})):
+                no_header = copy.deepcopy(base_request)
+                no_header['headers'] = {k: v for k, v in no_header['headers'].items() 
+                                      if k.lower() != header.lower()}
+                tests.append({
+                    'type': 'Header Test',
+                    'description': f'Missing required header: {header}',
+                    'request': no_header,
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+
+        # Test invalid header values
+        for header_name, header_value in list(base_request.get('headers', {}).items())[:5]:
+            if header_name.lower() not in ['content-type', 'content-length']:
+                # Test empty header value
+                empty_header = copy.deepcopy(base_request)
+                empty_header['headers'][header_name] = ''
+                tests.append({
+                    'type': 'Header Test',
+                    'description': f'Empty value for header: {header_name}',
+                    'request': empty_header,
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+                
+                # Test malformed header value
+                malformed_header = copy.deepcopy(base_request)
+                malformed_header['headers'][header_name] = 'malformed\nheader\rvalue'
+                tests.append({
+                    'type': 'Header Test',
+                    'description': f'Malformed value for header: {header_name}',
+                    'request': malformed_header,
+                    'expected_status': 400,
+                    'expected_result': '400 Bad Request'
+                })
+
+        # Test missing Authorization (if present in original)
+        if any(k.lower() == 'authorization' for k in base_request.get('headers', {})):
             no_auth = copy.deepcopy(base_request)
             no_auth['headers'] = {k: v for k, v in no_auth['headers'].items() 
                                 if k.lower() != 'authorization'}
-            test_cases.append({
+            tests.append({
                 'type': 'Security Test',
                 'description': 'Missing Authorization header',
                 'request': no_auth,
                 'expected_status': 401,
                 'expected_result': '401 Unauthorized'
             })
+            
+            # Test invalid Authorization format
+            invalid_auth = copy.deepcopy(base_request)
+            for key in list(invalid_auth['headers'].keys()):
+                if key.lower() == 'authorization':
+                    invalid_auth['headers'][key] = 'InvalidFormat'
+                    break
+            tests.append({
+                'type': 'Security Test',
+                'description': 'Invalid Authorization header format',
+                'request': invalid_auth,
+                'expected_status': 401,
+                'expected_result': '401 Unauthorized'
+            })
 
-    def _generate_method_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
+        return tests
+
+    def _generate_method_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate HTTP method tests"""
+        tests = []
         original_method = base_request['method']
         
         # Test wrong methods
-        wrong_methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
-        if original_method in wrong_methods:
-            wrong_methods.remove(original_method)
+        all_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT']
+        wrong_methods = [m for m in all_methods if m != original_method]
         
-        for method in wrong_methods[:3]:  # Test 3 wrong methods
-            test_cases.append({
+        for method in wrong_methods[:6]:  # Test 6 wrong methods
+            tests.append({
                 'type': 'Method Test',
                 'description': f'Wrong HTTP method ({method} instead of {original_method})',
                 'request': {**base_request, 'method': method},
@@ -556,71 +853,173 @@ class TestCaseGenerator:
                 'expected_result': '405 Method Not Allowed'
             })
 
-    def _generate_url_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
+        return tests
+
+    def _generate_url_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate URL-related tests"""
+        tests = []
         original_url = base_request['url']
         
-        # Test non-existent endpoint
-        if original_url.endswith('/'):
-            wrong_url = original_url + 'nonexistent'
-        else:
-            wrong_url = original_url + '/nonexistent'
-            
-        test_cases.append({
-            'type': 'URL Test',
-            'description': 'Non-existent endpoint',
-            'request': {**base_request, 'url': wrong_url},
-            'expected_status': 404,
-            'expected_result': '404 Not Found'
-        })
-
-    def _get_status_text(self, status: int) -> str:
-        """Get HTTP status text"""
-        status_texts = {
-            200: 'OK', 201: 'Created', 202: 'Accepted', 204: 'No Content',
-            400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
-            404: 'Not Found', 405: 'Method Not Allowed', 409: 'Conflict', 
-            415: 'Unsupported Media Type', 422: 'Unprocessable Entity', 
-            429: 'Too Many Requests', 500: 'Internal Server Error', 
-            502: 'Bad Gateway', 503: 'Service Unavailable'
-        }
-        return status_texts.get(status, 'Unknown')
-        if string_fields:
-            field = string_fields[0]  # Test only first string field
-            for payload in self.security_payloads[:3]:  # Limit to 3 security tests
-                modified_data = copy.deepcopy(data)
-                modified_data[field] = payload['payload']
-                test_cases.append({
-                    'type': 'Security',
-                    'description': f'{payload["name"]} injection in {field}',
-                    'request': {**base_request, 'data': modified_data},
-                    'expected_status': 400,
-                    'expected_result': '400 Bad Request'
-                })
-
-    def _generate_header_tests(self, base_request: Dict[str, Any], test_cases: List[Dict[str, Any]]):
-        """Generate header-related tests"""
-        if 'Content-Type' in base_request['headers']:
-            # Missing Content-Type
-            no_content_type = copy.deepcopy(base_request)
-            del no_content_type['headers']['Content-Type']
-            test_cases.append({
-                'type': 'Header Test',
-                'description': 'Missing Content-Type header',
-                'request': no_content_type,
-                'expected_status': 415,
-                'expected_result': '415 Unsupported Media Type'
+        # Test non-existent endpoints
+        url_variations = [
+            original_url + '/nonexistent',
+            original_url.rstrip('/') + '/invalid',
+            original_url.replace('api/', 'api/v999/'),
+            original_url.replace('api/', 'invalid/'),
+            original_url + '?invalid=param'
+        ]
+        
+        for wrong_url in url_variations:
+            tests.append({
+                'type': 'URL Test',
+                'description': f'Invalid endpoint: {wrong_url.split("/")[-1]}',
+                'request': {**base_request, 'url': wrong_url},
+                'expected_status': 404,
+                'expected_result': '404 Not Found'
             })
 
+        return tests
+
+    def _generate_auth_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate authentication and authorization tests"""
+        tests = []
+        
+        # Test with modified user header (if present)
+        user_headers = ['user', 'authorization', 'x-api-key', 'token']
+        for header_name in user_headers:
+            matching_headers = [k for k in base_request.get('headers', {}) if k.lower() == header_name.lower()]
+            if matching_headers:
+                original_header = matching_headers[0]
+                
+                # Test with invalid user data
+                invalid_user = copy.deepcopy(base_request)
+                if header_name.lower() == 'user':
+                    invalid_user['headers'][original_header] = '{"_id":"invalid_user_id"}'
+                else:
+                    invalid_user['headers'][original_header] = 'invalid_token'
+                
+                tests.append({
+                    'type': 'Auth Test',
+                    'description': f'Invalid {header_name} credentials',
+                    'request': invalid_user,
+                    'expected_status': 401,
+                    'expected_result': '401 Unauthorized'
+                })
+                
+                # Test with expired/malformed data
+                expired_auth = copy.deepcopy(base_request)
+                if header_name.lower() == 'user':
+                    expired_auth['headers'][original_header] = '{"_id":"","expired":true}'
+                else:
+                    expired_auth['headers'][original_header] = 'expired.token.here'
+                
+                tests.append({
+                    'type': 'Auth Test',
+                    'description': f'Expired/malformed {header_name}',
+                    'request': expired_auth,
+                    'expected_status': 401,
+                    'expected_result': '401 Unauthorized'
+                })
+
+        return tests
+
+    def _generate_performance_tests(self, base_request: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate performance and stress tests"""
+        tests = []
+        
+        if not base_request.get('data'):
+            return tests
+        
+        # Test with very large payload
+        large_payload = copy.deepcopy(base_request['data'])
+        if isinstance(large_payload, dict):
+            # Add a very large field
+            large_payload['largeField'] = 'X' * 1000000  # 1MB string
+            tests.append({
+                'type': 'Performance Test',
+                'description': 'Very large payload (1MB)',
+                'request': {**base_request, 'data': large_payload},
+                'expected_status': 413,
+                'expected_result': '413 Payload Too Large'
+            })
+            
+            # Test with many duplicate fields
+            many_fields = copy.deepcopy(base_request['data'])
+            for i in range(1000):
+                many_fields[f'duplicateField{i}'] = f'value{i}'
+            tests.append({
+                'type': 'Performance Test',
+                'description': 'Payload with many fields (1000)',
+                'request': {**base_request, 'data': many_fields},
+                'expected_status': 400,
+                'expected_result': '400 Bad Request'
+            })
+
+        return tests
+
+    def _find_string_fields(self, data: Any, path: str = '') -> List[str]:
+        """Find all string fields in nested data structure"""
+        fields = []
+        
+        if isinstance(data, dict):
+            for key, value in data.items():
+                current_path = f"{path}.{key}" if path else key
+                if isinstance(value, str):
+                    fields.append(current_path)
+                elif isinstance(value, (dict, list)):
+                    fields.extend(self._find_string_fields(value, current_path))
+        elif isinstance(data, list):
+            for i, item in enumerate(data):
+                current_path = f"{path}[{i}]"
+                if isinstance(item, str):
+                    fields.append(current_path)
+                elif isinstance(item, (dict, list)):
+                    fields.extend(self._find_string_fields(item, current_path))
+        
+        return fields
+
+    def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any):
+        """Set value in nested data structure using dot notation"""
+        if '.' not in path and '[' not in path:
+            data[path] = value
+            return
+        
+        # Handle array indices
+        if '[' in path:
+            # Simple handling for array[index] patterns
+            parts = path.replace('[', '.').replace(']', '').split('.')
+        else:
+            parts = path.split('.')
+        
+        current = data
+        for part in parts[:-1]:
+            if part.isdigit():
+                current = current[int(part)]
+            else:
+                current = current[part]
+        
+        final_key = parts[-1]
+        if final_key.isdigit():
+            current[int(final_key)] = value
+        else:
+            current[final_key] = value
+
+    def _create_minimal_valid_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create minimal valid payload by removing optional fields"""
+        # This is a simplified version - in real scenarios, you'd know which fields are required
+        # For now, we'll assume all fields are required
+        return data
+
     def _get_status_text(self, status: int) -> str:
         """Get HTTP status text"""
         status_texts = {
             200: 'OK', 201: 'Created', 202: 'Accepted', 204: 'No Content',
             400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
             404: 'Not Found', 405: 'Method Not Allowed', 409: 'Conflict', 
-            415: 'Unsupported Media Type', 422: 'Unprocessable Entity', 
-            429: 'Too Many Requests', 500: 'Internal Server Error', 
-            502: 'Bad Gateway', 503: 'Service Unavailable'
+            413: 'Payload Too Large', 415: 'Unsupported Media Type', 
+            422: 'Unprocessable Entity', 429: 'Too Many Requests', 
+            500: 'Internal Server Error', 502: 'Bad Gateway', 
+            503: 'Service Unavailable'
         }
         return status_texts.get(status, 'Unknown')
 
@@ -642,83 +1041,48 @@ class HTTPExecutor:
             
             print(f'🔍 Making {method} request to {url}')
 
-            # Start with a fresh session for each request to avoid any interference
             kwargs = {
                 'timeout': 15,
                 'allow_redirects': True
             }
 
-            # Handle headers - replicate exactly what curl sends
+            # Handle headers
             if headers:
-                # Ensure proper header formatting
                 clean_headers = {}
                 for key, value in headers.items():
                     clean_headers[key] = value
-                
                 kwargs['headers'] = clean_headers
-                print(f'📋 Headers: {clean_headers}')
 
-            # Handle data - this is the critical part for avoiding 405 errors
+            # Handle data
             if data is not None:
-                print(f'📊 Data type: {type(data)}')
-                print(f'📊 Data content: {str(data)[:300]}...')
-                
-                # For JSON data, use the json parameter which automatically:
-                # 1. Sets Content-Type: application/json
-                # 2. Serializes the data properly
-                # 3. Handles encoding correctly
                 if isinstance(data, dict):
                     kwargs['json'] = data
-                    print('📊 Sending as JSON object')
                 elif isinstance(data, str):
                     try:
-                        # Try to parse string as JSON
                         json_data = json.loads(data)
                         kwargs['json'] = json_data
-                        print('📊 Parsed string as JSON and sending as JSON object')
                     except json.JSONDecodeError:
-                        # If not JSON, send as raw data with proper Content-Type
                         kwargs['data'] = data
                         if 'headers' not in kwargs:
                             kwargs['headers'] = {}
                         if 'Content-Type' not in kwargs['headers']:
                             kwargs['headers']['Content-Type'] = 'application/json'
-                        print('📊 Sending as raw string data')
                 else:
-                    # For other data types, convert to JSON
                     kwargs['json'] = data
-                    print('📊 Converting to JSON')
-
-            # Debug output - show exactly what will be sent
-            print(f'🔧 Final request configuration:')
-            print(f'   Method: {method}')
-            print(f'   URL: {url}')
-            print(f'   Headers: {kwargs.get("headers", "None")}')
-            if 'json' in kwargs:
-                print(f'   JSON Data: {json.dumps(kwargs["json"], indent=2)[:300]}...')
-            elif 'data' in kwargs:
-                print(f'   Raw Data: {str(kwargs["data"])[:300]}...')
-            else:
-                print('   No Data')
 
             # Make the request
             start_time = time.time()
             response = self.session.request(method, url, **kwargs)
             response_time = time.time() - start_time
             
-            print(f'📊 Response Status: {response.status_code} {response.reason}')
-            print(f'📊 Response Headers: {dict(response.headers)}')
-            
             # Try to parse JSON response
             try:
                 if response.text.strip():
                     response_data = response.json()
-                    print(f'📊 Response Data: {json.dumps(response_data, indent=2)[:200]}...')
                 else:
                     response_data = {}
             except json.JSONDecodeError:
                 response_data = response.text
-                print(f'📊 Response Text: {response_data[:200]}...')
 
             return {
                 'status': response.status_code,
@@ -728,7 +1092,6 @@ class HTTPExecutor:
             }
 
         except requests.exceptions.Timeout:
-            print('❌ Request timed out')
             return {
                 'status': 0,
                 'error': 'Request timeout (15s)',
@@ -736,7 +1099,6 @@ class HTTPExecutor:
                 'response_time': 15.0
             }
         except requests.exceptions.ConnectionError as e:
-            print(f'❌ Connection error: {e}')
             return {
                 'status': 0,
                 'error': f'Connection error: {str(e)[:100]}...',
@@ -744,9 +1106,6 @@ class HTTPExecutor:
                 'response_time': 0
             }
         except Exception as e:
-            print(f'❌ Request error: {e}')
-            import traceback
-            print(f'❌ Traceback: {traceback.format_exc()[:500]}...')
             return {
                 'status': 0,
                 'error': str(e)[:100] + '...' if len(str(e)) > 100 else str(e),
@@ -780,9 +1139,9 @@ class ReportGenerator:
 
     def _is_expected_result(self, actual_status: int, expected_status: int, test_type: str) -> bool:
         """Check if result matches expectations"""
-        if test_type == 'Positive':
-            return actual_status in [expected_status, 200, 201]
-        elif 'Negative' in test_type or 'Security' in test_type or 'Edge Case' in test_type or 'Boundary' in test_type:
+        if 'Positive' in test_type:
+            return actual_status in [expected_status, 200, 201, 202]
+        elif any(keyword in test_type for keyword in ['Negative', 'Security', 'Edge Case', 'Boundary', 'Format']):
             return actual_status >= 400
         elif 'Header Test' in test_type:
             return actual_status in [400, 415]
@@ -790,13 +1149,17 @@ class ReportGenerator:
             return actual_status == 405
         elif 'URL Test' in test_type:
             return actual_status == 404
+        elif 'Auth Test' in test_type:
+            return actual_status in [401, 403]
+        elif 'Performance Test' in test_type:
+            return actual_status in [400, 413, 429]
         else:
             return actual_status == expected_status
 
     def print_console_summary(self):
-        """Print console summary"""
-        print('\n📊 Test Execution Summary')
-        print('=========================\n')
+        """Print detailed console summary"""
+        print('\n📊 Comprehensive Test Execution Summary')
+        print('=' * 50)
         
         passed = sum(1 for r in self.results if r['passed'])
         failed = len(self.results) - passed
@@ -807,7 +1170,7 @@ class ReportGenerator:
         print(f'📈 Total: {len(self.results)}')
         print(f'📊 Pass Rate: {pass_rate:.1f}%')
         
-        # Category breakdown
+        # Detailed category breakdown
         categories = {}
         for result in self.results:
             cat = result['test_type']
@@ -817,66 +1180,122 @@ class ReportGenerator:
             if result['passed']:
                 categories[cat]['passed'] += 1
         
-        print('\n📋 Category Breakdown:')
-        for cat, stats in categories.items():
+        print('\n📋 Detailed Category Breakdown:')
+        for cat, stats in sorted(categories.items()):
             rate = (stats['passed'] / stats['total'] * 100) if stats['total'] > 0 else 0
-            print(f'  {cat}: {stats["passed"]}/{stats["total"]} ({rate:.1f}%)')
+            status = '✅' if rate > 80 else '⚠️' if rate > 50 else '❌'
+            print(f'  {status} {cat}: {stats["passed"]}/{stats["total"]} ({rate:.1f}%)')
         
+        # Performance stats
         avg_time = sum(r["response_time"] for r in self.results) / len(self.results) if self.results else 0
-        print(f'\n🔗 Average Response Time: {avg_time:.2f}s')
+        max_time = max(r["response_time"] for r in self.results) if self.results else 0
+        min_time = min(r["response_time"] for r in self.results) if self.results else 0
+        
+        print(f'\n⏱️ Performance Analysis:')
+        print(f'  Average Response Time: {avg_time:.2f}s')
+        print(f'  Maximum Response Time: {max_time:.2f}s')
+        print(f'  Minimum Response Time: {min_time:.2f}s')
+        
+        # Security test results
+        security_tests = [r for r in self.results if 'Security' in r['test_type']]
+        if security_tests:
+            security_passed = sum(1 for r in security_tests if r['passed'])
+            print(f'\n🔒 Security Test Results: {security_passed}/{len(security_tests)} passed')
 
     def generate_html_report(self, original_curl: str):
-        """Generate clean HTML report without broken features"""
+        """Generate enhanced HTML report"""
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        filename = f'api-test-report-{timestamp}.html'
+        filename = f'comprehensive-api-test-report-{timestamp}.html'
         
         passed = sum(1 for r in self.results if r['passed'])
         failed = len(self.results) - passed
         pass_rate = (passed / len(self.results) * 100) if self.results else 0
         
-        html_content = self._build_html_content(passed, failed, pass_rate, original_curl)
+        # Group results by category
+        categories = {}
+        for result in self.results:
+            cat = result['test_type']
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append(result)
+        
+        html_content = self._build_enhanced_html_content(passed, failed, pass_rate, original_curl, categories)
         
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            print(f'\n📄 HTML Report Generated: {filename}')
+            print(f'\n📄 Enhanced HTML Report Generated: {filename}')
             print(f'🌐 Open in browser: file://{os.path.abspath(filename)}')
         except Exception as error:
             print(f'❌ Could not save HTML report: {error}')
 
-    def _build_html_content(self, passed: int, failed: int, pass_rate: float, original_curl: str) -> str:
-        """Build clean HTML report content"""
+    def _build_enhanced_html_content(self, passed: int, failed: int, pass_rate: float, 
+                                   original_curl: str, categories: Dict[str, List]) -> str:
+        """Build enhanced HTML report content with better organization"""
         
-        # Build table rows
-        table_rows = []
-        for result in self.results:
-            status_class = 'pass' if result['passed'] else 'fail'
-            status_text = '✅ PASS' if result['passed'] else '❌ FAIL'
+        # Build category sections
+        category_sections = []
+        for cat_name, cat_results in sorted(categories.items()):
+            cat_passed = sum(1 for r in cat_results if r['passed'])
+            cat_total = len(cat_results)
+            cat_rate = (cat_passed / cat_total * 100) if cat_total > 0 else 0
             
-            if result.get('error'):
-                status_text = '❌ ERROR'
-                status_class = 'error'
+            table_rows = []
+            for result in cat_results:
+                status_class = 'pass' if result['passed'] else 'fail'
+                status_text = '✅ PASS' if result['passed'] else '❌ FAIL'
+                
+                if result.get('error'):
+                    status_text = '❌ ERROR'
+                    status_class = 'error'
+                
+                curl_command = self._generate_curl_command(result['request'])
+                
+                table_rows.append(f'''
+                <tr>
+                    <td class="description">{html.escape(result["description"])}</td>
+                    <td class="curl-cell">
+                        <details>
+                            <summary>View cURL</summary>
+                            <pre class="curl-code">{html.escape(curl_command)}</pre>
+                        </details>
+                    </td>
+                    <td>{result["expected"]}</td>
+                    <td>{result["actual"]}</td>
+                    <td>{result["response_time"]:.2f}s</td>
+                    <td><span class="status {status_class}">{status_text}</span></td>
+                </tr>''')
             
-            # Generate curl command for this test
-            curl_command = self._generate_curl_command(result['request'])
-            
-            table_rows.append(f'''
-            <tr>
-                <td><span class="test-type">{html.escape(result["test_type"])}</span></td>
-                <td class="description">{html.escape(result["description"])}</td>
-                <td class="curl-cell">
-                    <details>
-                        <summary>View cURL</summary>
-                        <pre class="curl-code">{html.escape(curl_command)}</pre>
-                    </details>
-                </td>
-                <td>{result["expected"]}</td>
-                <td>{result["actual"]}</td>
-                <td>{result["response_time"]:.2f}s</td>
-                <td><span class="status {status_class}">{status_text}</span></td>
-            </tr>''')
+            category_sections.append(f'''
+            <div class="category-section">
+                <div class="category-header">
+                    <h3>{html.escape(cat_name)}</h3>
+                    <div class="category-stats">
+                        <span class="stat-badge {'pass' if cat_rate > 80 else 'warning' if cat_rate > 50 else 'fail'}">
+                            {cat_passed}/{cat_total} ({cat_rate:.1f}%)
+                        </span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>cURL Command</th>
+                                <th>Expected</th>
+                                <th>Actual</th>
+                                <th>Response Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {''.join(table_rows)}
+                        </tbody>
+                    </table>
+                </div>
+            </div>''')
         
-        table_rows_html = '\n'.join(table_rows)
+        category_sections_html = '\n'.join(category_sections)
         original_curl_escaped = html.escape(original_curl)
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
@@ -885,7 +1304,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Test Report - {current_time}</title>
+    <title>Comprehensive API Test Report - {current_time}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ 
@@ -895,7 +1314,7 @@ class ReportGenerator:
             padding: 20px; 
         }}
         .container {{ 
-            max-width: 1400px; 
+            max-width: 1600px; 
             margin: 0 auto; 
             background: white; 
             border-radius: 20px; 
@@ -910,13 +1329,19 @@ class ReportGenerator:
         }}
         .header h1 {{ font-size: 2.5em; margin-bottom: 10px; font-weight: 300; }}
         .header .subtitle {{ font-size: 1.2em; opacity: 0.8; }}
-        .author-credit {{ 
-            background: rgba(255,255,255,0.1); 
-            padding: 8px 15px; 
-            border-radius: 20px; 
-            font-size: 0.9em; 
-            display: inline-block;
-            margin-top: 15px;
+        .progress-bar {{ 
+            width: 100%; 
+            height: 12px; 
+            background: rgba(255,255,255,0.2); 
+            border-radius: 6px; 
+            overflow: hidden; 
+            margin: 20px 0; 
+        }}
+        .progress-fill {{ 
+            height: 100%; 
+            background: linear-gradient(90deg, #27ae60, #2ecc71); 
+            width: {pass_rate}%; 
+            transition: width 0.3s ease;
         }}
         .stats-grid {{ 
             display: grid; 
@@ -931,28 +1356,18 @@ class ReportGenerator:
             border-radius: 15px; 
             text-align: center; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.08); 
+            transition: transform 0.2s ease;
         }}
+        .stat-card:hover {{ transform: translateY(-5px); }}
         .stat-number {{ font-size: 2.5em; font-weight: bold; margin-bottom: 10px; }}
         .stat-label {{ font-size: 1.1em; color: #666; text-transform: uppercase; letter-spacing: 1px; }}
         .passed {{ color: #27ae60; }}
         .failed {{ color: #e74c3c; }}
         .total {{ color: #3498db; }}
-        .progress-bar {{ 
-            width: 100%; 
-            height: 8px; 
-            background: #ecf0f1; 
-            border-radius: 4px; 
-            overflow: hidden; 
-            margin: 20px 0; 
-        }}
-        .progress-fill {{ 
-            height: 100%; 
-            background: linear-gradient(90deg, #27ae60, #2ecc71); 
-            width: {pass_rate}%; 
-        }}
+        .security {{ color: #9b59b6; }}
         .original-curl {{ 
             margin: 20px 30px; 
-            padding: 20px; 
+            padding: 20px;
             background: #2c3e50; 
             color: #ecf0f1; 
             border-radius: 10px; 
@@ -964,23 +1379,54 @@ class ReportGenerator:
             margin-bottom: 10px; 
             color: #3498db; 
         }}
-        .table-container {{ padding: 30px; overflow-x: auto; }}
+        .category-section {{
+            margin: 20px 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        .category-header {{
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .category-header h3 {{
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 300;
+        }}
+        .category-stats {{
+            display: flex;
+            gap: 10px;
+        }}
+        .stat-badge {{
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }}
+        .stat-badge.pass {{ background: #d5f4e6; color: #27ae60; }}
+        .stat-badge.warning {{ background: #fef9e7; color: #f39c12; }}
+        .stat-badge.fail {{ background: #fadbd8; color: #e74c3c; }}
+        .table-container {{ padding: 0; overflow-x: auto; }}
         table {{ 
             width: 100%; 
             border-collapse: collapse; 
             background: white; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08); 
         }}
         th {{ 
-            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); 
-            color: white; 
+            background: #f8f9fa; 
+            color: #2c3e50; 
             padding: 15px 10px; 
             text-align: left; 
             font-weight: 600; 
             font-size: 0.9em; 
             text-transform: uppercase; 
+            border-bottom: 2px solid #ecf0f1;
         }}
         td {{ 
             padding: 12px 10px; 
@@ -988,15 +1434,6 @@ class ReportGenerator:
             vertical-align: top;
         }}
         tr:hover td {{ background: #f8f9fa; }}
-        .test-type {{ 
-            padding: 6px 12px; 
-            border-radius: 15px; 
-            font-size: 0.8em; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            background: #ecf0f1;
-            color: #2c3e50;
-        }}
         .status {{ 
             padding: 6px 12px; 
             border-radius: 15px; 
@@ -1006,7 +1443,7 @@ class ReportGenerator:
         .status.pass {{ background: #d5f4e6; color: #27ae60; }}
         .status.fail {{ background: #fadbd8; color: #e74c3c; }}
         .status.error {{ background: #d5dbdb; color: #566573; }}
-        .description {{ max-width: 250px; word-wrap: break-word; }}
+        .description {{ max-width: 300px; word-wrap: break-word; }}
         .curl-cell {{ max-width: 200px; }}
         .curl-code {{ 
             background: #2c3e50; 
@@ -1036,25 +1473,36 @@ class ReportGenerator:
             padding: 20px; 
             font-size: 0.9em; 
         }}
+        .enhanced-badge {{
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+        }}
         @media (max-width: 768px) {{
             .stats-grid {{ grid-template-columns: repeat(2, 1fr); }}
             .header h1 {{ font-size: 2em; }}
             th, td {{ padding: 8px 6px; font-size: 0.8em; }}
             .original-curl {{ margin: 10px; padding: 15px; font-size: 12px; }}
             .curl-code {{ font-size: 10px; }}
+            .category-section {{ margin: 10px; }}
         }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🧪 API Test Report</h1>
-            <div class="subtitle">Generated on {current_time}</div>
+            <h1>🧪 Comprehensive API Test Report</h1>
+            <div class="subtitle">Advanced Testing with Enhanced Coverage</div>
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
             <div style="margin-top: 15px; font-size: 1.3em;">Pass Rate: {pass_rate:.1f}%</div>
-            <div class="author-credit">Built by Nitin Sharma</div>
+            <div class="enhanced-badge">Enhanced Test Suite by Nitin Sharma</div>
         </div>
         
         <div class="stats-grid">
@@ -1071,7 +1519,7 @@ class ReportGenerator:
                 <div class="stat-label">Total Tests</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #9b59b6;">{len([r for r in self.results if 'Security' in r['test_type']])}</div>
+                <div class="stat-number security">{len([r for cat_results in categories.values() for r in cat_results if 'Security' in r['test_type']])}</div>
                 <div class="stat-label">Security Tests</div>
             </div>
         </div>
@@ -1081,32 +1529,15 @@ class ReportGenerator:
             <div>{original_curl_escaped}</div>
         </div>
         
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Test Type</th>
-                        <th>Description</th>
-                        <th>cURL Command</th>
-                        <th>Expected</th>
-                        <th>Actual</th>
-                        <th>Response Time</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {table_rows_html}
-                </tbody>
-            </table>
-        </div>
+        {category_sections_html}
         
         <div class="footer">
-            <div>Generated by Universal REST API Testing Tool (Fixed Python Version)</div>
+            <div>Generated by Enhanced Universal REST API Testing Tool</div>
             <div style="margin-top: 10px; opacity: 0.8;">
-                Report contains {passed + failed} test cases with {pass_rate:.1f}% pass rate
+                Comprehensive test coverage with {passed + failed} test cases and {pass_rate:.1f}% pass rate
             </div>
             <div style="margin-top: 5px; opacity: 0.6; font-size: 0.8em;">
-                Built with ❤️ by Nitin Sharma
+                Enhanced with ❤️ by Nitin Sharma - Advanced Security & Edge Case Testing
             </div>
         </div>
     </div>
@@ -1156,9 +1587,9 @@ class CLIInterface:
             try:
                 line = input()
                 if line.strip() == '':
-                    if lines:  # If we have some input, finish
+                    if lines:
                         break
-                    else:  # If no input yet, continue waiting
+                    else:
                         print('> ', end='', flush=True)
                         continue
                 else:
@@ -1172,7 +1603,6 @@ class CLIInterface:
         
         result = '\n'.join(lines).strip()
         
-        # If the result is empty, provide a fallback
         if not result:
             print('\n⚠️  No input detected. Let\'s try a different approach.')
             print('Please enter your curl command on a single line:')
@@ -1211,94 +1641,43 @@ class CLIInterface:
                 print('\n\n❌ Operation cancelled by user.')
                 sys.exit(1)
     
-    def get_expected_response(self) -> Optional[Dict[str, Any]]:
-        """Get expected response from user"""
-        print('\n📝 Expected Response Configuration (Optional)')
-        print('===========================================')
-        print('You can specify expected response data for validation.')
-        print('Leave empty to skip response validation.')
-        print('Format: JSON object (e.g., {"status": "success", "data": {...}})')
-        
-        while True:
-            try:
-                response_input = input('\n🎯 Enter expected response JSON (or press Enter to skip): ').strip()
-                
-                if not response_input:
-                    print('✅ Skipping response validation')
-                    return None
-                
-                try:
-                    expected_response = json.loads(response_input)
-                    print('✅ Expected response configured successfully')
-                    return expected_response
-                except json.JSONDecodeError as e:
-                    print(f'❌ Invalid JSON format: {e}')
-                    retry = input('🔄 Try again? (y/n): ').lower().strip()
-                    if retry != 'y':
-                        print('✅ Skipping response validation')
-                        return None
-                        
-            except KeyboardInterrupt:
-                print('\n\n❌ Operation cancelled by user.')
-                sys.exit(1)
-    
     def show_welcome_message(self):
         """Show enhanced welcome message"""
-        print('🧪 Universal REST API Testing Tool (Fixed Python Version)')
-        print('=========================================================')
-        print('Built by Nitin Sharma')
+        print('🧪 Enhanced Universal REST API Testing Tool')
+        print('============================================')
+        print('Built by Nitin Sharma - Enhanced Version with Comprehensive Coverage')
         print('')
-        print('✨ Features:')
-        print('  🚀 Comprehensive test case generation')
-        print('  🔒 Security vulnerability testing')
-        print('  🎯 Edge case and boundary testing')
-        print('  📊 Real HTTP request execution')
-        print('  📄 Clean HTML reports')
-        print('  ⏱️  Response time analysis')
+        print('✨ Enhanced Features:')
+        print('  🚀 Comprehensive test case generation (100+ scenarios)')
+        print('  🔒 Advanced security vulnerability testing')
+        print('  🎯 Enhanced edge case and boundary testing')
+        print('  📊 Real HTTP request execution with detailed analysis')
+        print('  📄 Rich HTML reports with category organization')
+        print('  ⏱️  Performance analysis and response time tracking')
+        print('  🛡️  Authentication and authorization testing')
+        print('  📋 Format validation and structure testing')
+        print('  🔍 Nested field and array validation')
+        print('  💾 Large payload and stress testing')
         print('')
-        print('💡 Tip: If you have issues pasting multi-line commands,')
-        print('   you can also run in command line mode:')
-        print('   python api_tester.py --curl "your_curl_command_here"')
+        print('💡 This enhanced version generates significantly more test cases')
+        print('   covering all aspects of API security and functionality.')
         print('')
-    
-    def get_sample_curl_if_needed(self) -> str:
-        """Provide sample curl command if user needs it"""
-        print('\n🤔 Need a sample curl command to test?')
-        use_sample = input('Use sample curl command? (y/n): ').lower().strip()
-        
-        if use_sample == 'y':
-            sample_curl = '''curl --location 'https://api.restful-api.dev/objects' --header 'Content-Type: application/json' --data '{
-  "name": "Apple MacBook Pro 16",
-  "data": {
-    "year": 2019,
-    "price": 1849.99,
-    "CPU model": "Intel Core i9",
-    "Hard disk size": "1 TB"
-  }
-}'
-'''
-            print('\n📋 Sample curl command:')
-            print(sample_curl)
-            return sample_curl.strip()
-        
-        return ""
 
 
-class APITester:
-    """Main API testing orchestrator"""
+class EnhancedAPITester:
+    """Main enhanced API testing orchestrator"""
     
     def __init__(self):
         self.parser = CurlParser()
-        self.generator = TestCaseGenerator()
+        self.generator = EnhancedTestCaseGenerator()
         self.executor = HTTPExecutor()
         self.reporter = ReportGenerator()
         self.cli = CLIInterface()
 
-    def run_tests(self, curl_command: str, expected_status: int = 200, 
-                 expected_response: Optional[Dict] = None):
-        """Run the complete test suite"""
-        print('\n🚀 Starting API Test Suite')
-        print('=' * 50)
+    def run_comprehensive_tests(self, curl_command: str, expected_status: int = 200):
+        """Run the comprehensive test suite"""
+        print('\n🚀 Starting Enhanced API Test Suite')
+        print('=' * 60)
         
         # Parse curl command
         parsed = self.parser.parse_curl(curl_command)
@@ -1312,9 +1691,9 @@ class APITester:
         print(f'📊 Data: {"Yes" if parsed["data"] else "No"}')
         print(f'🎯 Expected Status: {expected_status}')
         
-        # First, test the original request to ensure it works
+        # Test original request first
         print('\n🧪 Testing Original Request First...')
-        print('=' * 40)
+        print('=' * 50)
         
         original_response = self.executor.execute_request(parsed)
         
@@ -1327,23 +1706,33 @@ class APITester:
             print('⚠️  This might indicate an issue with the curl command or API')
             print('⚠️  Proceeding with tests, but positive test may fail...')
         else:
-            print(f'✅ Original request successful: {original_response["status"]} {self.executor.session.get(parsed["url"]).reason if hasattr(self.executor.session.get(parsed["url"]), "reason") else ""}')
-            # Update expected status based on actual response if user didn't specify
+            print(f'✅ Original request successful: {original_response["status"]}')
             if expected_status == 200 and original_response['status'] in [200, 201, 202]:
                 expected_status = original_response['status']
                 print(f'🔄 Updated expected status to: {expected_status}')
         
-        # Generate test cases
-        test_cases = self.generator.generate_test_cases(parsed, expected_status)
+        # Generate comprehensive test cases
+        test_cases = self.generator.generate_comprehensive_test_cases(parsed, expected_status)
         
-        # Execute tests
-        print('\n⏳ Executing All Test Cases...')
-        print('=' * 50)
+        # Execute tests with progress tracking
+        print('\n⏳ Executing Comprehensive Test Suite...')
+        print('=' * 60)
+        
+        category_counts = {}
+        for test_case in test_cases:
+            cat = test_case['type']
+            category_counts[cat] = category_counts.get(cat, 0) + 1
+        
+        print('📊 Test Categories:')
+        for cat, count in sorted(category_counts.items()):
+            print(f'   • {cat}: {count} tests')
+        print('')
         
         for i, test_case in enumerate(test_cases, 1):
             try:
                 # Show progress
-                print(f'\r🔄 Running test {i}/{len(test_cases)}: {test_case["type"]}...', end='', flush=True)
+                progress = (i / len(test_cases)) * 100
+                print(f'\r🔄 Progress: {progress:.1f}% ({i}/{len(test_cases)}) - {test_case["type"]}', end='', flush=True)
                 
                 # Execute request
                 response = self.executor.execute_request(test_case['request'])
@@ -1351,39 +1740,32 @@ class APITester:
                 # Add result to reporter
                 self.reporter.add_result(test_case, response, test_case['expected_status'])
                 
-                # Show detailed output for first few tests
-                if i <= 3:
+                # Show detailed output for first few tests and every 20th test
+                if i <= 5 or i % 20 == 0:
                     status = '✅' if response['status'] != 0 else '❌'
-                    print(f'\r{status} Test {i}: {test_case["type"]} → {response["status"]}')
-                elif i % 10 == 0:  # Show progress every 10 tests
-                    status = '✅' if response['status'] != 0 else '❌'
-                    print(f'\r{status} Completed {i}/{len(test_cases)} tests', end='', flush=True)
+                    print(f'\r{status} Test {i}: {test_case["type"]} → {response["status"]}' + ' ' * 20)
                 
                 # Rate limiting
-                time.sleep(0.1)  # Small delay to be respectful
+                time.sleep(0.05)  # Small delay to be respectful
                 
             except Exception as error:
                 print(f'\n❌ Error in test {i}: {error}')
                 continue
         
-        print('\r✅ All tests completed!' + ' ' * 30)
+        print('\r✅ All comprehensive tests completed!' + ' ' * 50)
         
-        # Generate reports
+        # Generate detailed reports
         self.reporter.print_console_summary()
         self.reporter.generate_html_report(curl_command)
 
     def run_interactive_mode(self):
-        """Run in interactive mode with enhanced user input"""
+        """Run in enhanced interactive mode"""
         try:
             self.cli.show_welcome_message()
             
             # Get curl command
             curl_command = self.cli.get_multiline_input('📝 Enter your curl command:')
             
-            # If no command provided, offer sample
-            if not curl_command.strip():
-                curl_command = self.cli.get_sample_curl_if_needed()
-                
             if not curl_command.strip():
                 print('❌ No curl command provided. Exiting...')
                 sys.exit(1)
@@ -1395,11 +1777,8 @@ class APITester:
             # Get expected status code
             expected_status = self.cli.get_expected_status_code()
             
-            # Get expected response (optional)
-            expected_response = self.cli.get_expected_response()
-            
-            # Run tests
-            self.run_tests(curl_command, expected_status, expected_response)
+            # Run comprehensive tests
+            self.run_comprehensive_tests(curl_command, expected_status)
             
         except Exception as error:
             print(f'❌ Error: {error}')
@@ -1410,32 +1789,32 @@ class APITester:
 def parse_arguments():
     """Enhanced argument parsing"""
     parser = argparse.ArgumentParser(
-        description='🧪 Universal REST API Testing Tool (Fixed Python Version)',
+        description='🧪 Enhanced Universal REST API Testing Tool',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
+Enhanced Features:
+  🚀 Comprehensive test case generation (100+ scenarios per API)
+  🔒 Advanced security testing: XSS, SQL injection, command injection, path traversal
+  🎯 Enhanced edge case testing: Unicode, special characters, boundary values
+  📊 Real HTTP execution with detailed performance analysis
+  📄 Rich HTML reports with category organization and expandable cURL commands
+  🛡️  Authentication and authorization testing
+  📋 Format validation and structure testing
+  🔍 Nested field and array validation
+  💾 Large payload and stress testing
+  ⏱️  Response time analysis and performance insights
+
 Examples:
   Interactive mode (RECOMMENDED):
-    python api_tester.py
+    python enhanced_api_tester.py
 
-  Command line mode (use quotes around the entire curl command):
-    python api_tester.py --curl 'curl -X POST "https://api.example.com/test" -H "Content-Type: application/json" -d "{\"name\":\"test\"}"'
+  Command line mode:
+    python enhanced_api_tester.py --curl 'curl -X POST "https://api.example.com/test" -H "Content-Type: application/json" -d "{\"name\":\"test\"}"'
 
   With expected status:
-    python api_tester.py --curl 'curl -X POST ...' --status 201
+    python enhanced_api_tester.py --curl 'curl -X POST ...' --status 201
 
-Common Issues:
-  - If pasting fails in terminal, use command line mode instead
-  - Wrap the entire curl command in single quotes
-  - For JSON data, escape quotes properly: {\"key\":\"value\"}
-
-Features:
-  🚀 Comprehensive test cases including positive, negative, security tests
-  🔒 Security testing: XSS, SQL injection, command injection, path traversal
-  🎯 Edge case testing: missing fields, wrong types, null values
-  📊 Real HTTP execution with proper error handling and response time tracking
-  📄 Clean HTML reports with expandable cURL commands
-  ⏱️  Response time analysis and performance insights
-  👨‍💻 Built with ❤️ by Nitin Sharma
+👨‍💻 Enhanced with ❤️ by Nitin Sharma - Comprehensive API Testing Solution
         '''
     )
     
@@ -1453,21 +1832,8 @@ Features:
     )
     
     parser.add_argument(
-        '--response', '-r',
-        help='Expected response JSON (optional)',
-        type=str
-    )
-    
-    parser.add_argument(
         '--interactive', '-i',
         help='Force interactive mode',
-        action='store_true',
-        default=False
-    )
-    
-    parser.add_argument(
-        '--sample',
-        help='Use sample curl command for testing',
         action='store_true',
         default=False
     )
@@ -1478,15 +1844,7 @@ Features:
 def main():
     """Enhanced main function"""
     args = parse_arguments()
-    tester = APITester()
-    
-    # Handle sample command
-    if args.sample:
-        sample_curl = 'curl -X POST "https://api.restful-api.dev/objects" -H "Content-Type: application/json" -d \'{"name": "Apple MacBook Pro 16", "data": {"year": 2019, "price": 1849.99, "CPU model": "Intel Core i9", "Hard disk size": "1 TB"}}\''
-        print('🧪 Running with sample curl command...')
-        print('Built by Nitin Sharma\n')
-        tester.run_tests(sample_curl, args.status)
-        return
+    tester = EnhancedAPITester()
     
     # If no arguments provided or interactive flag, run interactive mode
     if len(sys.argv) == 1 or args.interactive or not args.curl:
@@ -1494,18 +1852,10 @@ def main():
         return
     
     # Command line mode
-    expected_response = None
-    if args.response:
-        try:
-            expected_response = json.loads(args.response)
-        except json.JSONDecodeError:
-            print('❌ Invalid JSON format for expected response')
-            sys.exit(1)
+    print('🧪 Running Enhanced API Tests (Command Line Mode)...')
+    print('Enhanced by Nitin Sharma\n')
     
-    print('🧪 Running API Tests (Command Line Mode)...')
-    print('Built by Nitin Sharma\n')
-    
-    tester.run_tests(args.curl, args.status, expected_response)
+    tester.run_comprehensive_tests(args.curl, args.status)
 
 
 if __name__ == '__main__':
