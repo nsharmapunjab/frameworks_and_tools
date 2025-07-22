@@ -3,7 +3,7 @@
 """
 Enhanced Universal REST API Testing Tool
 Comprehensive Test Case Generation
-Built by Enhanced Version
+Author : Nitin Sharma
 
 Features:
 - Comprehensive test case coverage
@@ -1892,7 +1892,7 @@ class ReportGenerator:
                 <div class="progress-fill"></div>
             </div>
             <div style="margin-top: 15px; font-size: 1.3em;">Pass Rate: {pass_rate:.1f}%</div>
-            <div class="enhanced-badge">Enhanced Test Suite by Nitin Sharma</div>
+            <div class="enhanced-badge">Generic API Test Tool by Nitin Sharma</div>
         </div>
         
         <div class="stats-grid">
@@ -1927,7 +1927,7 @@ class ReportGenerator:
                 Comprehensive test coverage with {passed + failed} test cases and {pass_rate:.1f}% pass rate
             </div>
             <div style="margin-top: 5px; opacity: 0.6; font-size: 0.8em;">
-                Enhanced with ❤️ by Nitin Sharma - Advanced Security & Edge Case Testing
+                Enhanced with ❤️  by Nitin Sharma - Advanced Security & Edge Case Testing
             </div>
         </div>
     </div>
@@ -2285,7 +2285,7 @@ Examples:
   Test parsing (DEBUG):
     python enhanced_api_tester.py --test
 
-👨‍💻 Enhanced with ❤️ by Nitin Sharma - Comprehensive API Testing Solution
+👨‍💻 Enhanced with ❤️  by Nitin Sharma - Comprehensive API Testing Solution
         '''
     )
     

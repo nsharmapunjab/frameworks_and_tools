@@ -89,12 +89,6 @@ chmod +x api_tester.py
 python api_tester.py
 ```
 
-### **Alternative Install**
-```bash
-# Install directly with pip (if published)
-pip install universal-api-tester
-```
-
 ## 🚀 Quick Start
 
 ### **Method 1: Interactive Mode (Recommended)**
@@ -129,9 +123,9 @@ python api_tester.py
 
 **Example Session:**
 ```
-🧪 Universal REST API Testing Tool (Fixed Python Version)
-=========================================================
-Built by Nitin Sharma
+🧪 Universal REST API Testing Tool
+==================================
+   Built by Nitin Sharma
 
 📝 Enter your curl command:
 > curl --location 'https://api.restful-api.dev/objects' \
@@ -348,6 +342,7 @@ We welcome contributions! Here's how you can help:
 # Fork and clone the repository
 git clone https://github.com/nsharmapunjab/frameworks_and_tools.git
 cd apitester
+cd python
 
 # Create virtual environment
 python -m venv venv
@@ -402,13 +397,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## 🙏 Acknowledgments
-
-- **Python Community** for the excellent `requests` library
-- **cURL Project** for the inspiration and command format
-- **REST API Community** for testing best practices
-- **Open Source Contributors** who make tools like this possible
-
 ## 📈 Roadmap
 
 ### **Upcoming Features**
@@ -424,8 +412,6 @@ SOFTWARE.
 ---
 
 ## 📞 Contact
-
-**Built by Nitin Sharma**
 
 - **📧 Email**: [nsharmapunjab@gmail.com](mailto:nsharmapunjab@gmail.com)
 - **💼 LinkedIn**: [Connect with me](https://www.linkedin.com/in/nitin-sharma-23512743/)
@@ -445,6 +431,6 @@ If this tool has helped you in your API testing journey, consider:
 
 ---
 
-**Made with ❤️ by Nitin Sharma**
+**Made with ❤️  by Nitin Sharma**
 
 *Happy API Testing! 🚀*
