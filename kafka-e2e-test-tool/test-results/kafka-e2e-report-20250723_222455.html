@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kafka E2E Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #f0f0f0; padding: 20px; border-radius: 5px; }
+        .summary { background: #e8f5e8; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .passed { background: #d4edda; }
+        .failed { background: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Kafka E2E Test Report</h1>
+        <p><strong>Generated:</strong> 2025-07-23 22:24:55</p>
+        <p><strong>Bootstrap Servers:</strong> localhost:9092</p>
+    </div>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        <p><strong>Total Tests:</strong> 1</p>
+        <p><strong>Passed:</strong> 1</p>
+        <p><strong>Failed:</strong> 0</p>
+        <p><strong>Pass Rate:</strong> 100.0%</p>
+    </div>
+    
+    <h2>Test Results</h2>
+
+    <div class="test-result passed">
+        <h3>PASSED - basic_message_flow</h3>
+        <p><strong>Description:</strong> Basic producer-consumer test</p>
+        <p><strong>Duration:</strong> 105.08 ms</p>
+        <details>
+            <summary>Details</summary>
+            <pre>{
+  "test_name": "basic_message_flow",
+  "description": "Basic producer-consumer test",
+  "status": "PASSED",
+  "start_time": "2025-07-23T22:24:55.112600",
+  "end_time": "2025-07-23T22:24:55.217684",
+  "duration_ms": 105.084,
+  "production_stats": {
+    "total_messages": 2,
+    "success_count": 2,
+    "failed_count": 0,
+    "duration_seconds": 5.0067901611328125e-06,
+    "messages_per_second": 399457.5238095238
+  },
+  "consumption_stats": {
+    "messages_consumed": 2
+  },
+  "validation_results": {
+    "delivery": {
+      "success": true,
+      "produced_count": 2,
+      "consumed_count": 2,
+      "missing_messages": []
+    }
+  },
+  "errors": []
+}</pre>
+        </details>
+    </div>
+
+    <h2>Configuration</h2>
+    <pre>{
+  "kafka": {
+    "bootstrap_servers": "localhost:9092",
+    "producer": {
+      "topic": "test",
+      "config": {
+        "acks": "all",
+        "retries": 3
+      }
+    },
+    "consumer": {
+      "topic": "test",
+      "config": {
+        "group_id": "kafka-e2e-test-group",
+        "auto_offset_reset": "earliest"
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "name": "basic_message_flow",
+      "description": "Basic producer-consumer test",
+      "enabled": true,
+      "messages": [
+        "Hello Kafka!",
+        "Test Message 2"
+      ],
+      "validations": [
+        "delivery"
+      ]
+    }
+  ],
+  "validation_config": {
+    "timeout": 30,
+    "max_latency_ms": 5000,
+    "expected_order": true,
+    "allow_duplicates": false,
+    "retry_attempts": 3
+  }
+}</pre>
+</body>
+</html>

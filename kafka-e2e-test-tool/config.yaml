@@ -1,0 +1,27 @@
+kafka:
+  bootstrap_servers: localhost:9092
+  consumer:
+    config:
+      auto_offset_reset: earliest
+      group_id: kafka-e2e-test-group
+    topic: test-consumer-topic
+  producer:
+    config:
+      acks: all
+      retries: 3
+    topic: test-producer-topic
+test_cases:
+- description: Basic message flow test
+  enabled: true
+  messages:
+  - Hello Kafka!
+  - Test Message 2
+  name: basic_test
+  validations:
+  - delivery
+  - order
+validation_config:
+  allow_duplicates: false
+  expected_order: true
+  max_latency_ms: 5000
+  timeout: 30
