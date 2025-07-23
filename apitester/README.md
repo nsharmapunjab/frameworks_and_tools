@@ -77,7 +77,6 @@ requests>=2.25.0
 # Clone the repository
 git clone https://github.com/nsharmapunjab/frameworks_and_tools.git
 cd apitester
-cd python
 
 # Install dependencies
 pip install requests
@@ -342,7 +341,6 @@ We welcome contributions! Here's how you can help:
 # Fork and clone the repository
 git clone https://github.com/nsharmapunjab/frameworks_and_tools.git
 cd apitester
-cd python
 
 # Create virtual environment
 python -m venv venv
