@@ -1,0 +1,12 @@
+# Core dependencies
+click>=8.0.0
+PyYAML>=6.0
+
+# Kafka (optional - will use mock if not available)
+kafka-python>=2.0.2
+
+# Validation (optional)
+jsonschema>=4.0.0
+
+# Testing with containers (optional)
+testcontainers>=3.4.0
