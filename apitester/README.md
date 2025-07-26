@@ -429,6 +429,6 @@ If this tool has helped you in your API testing journey, consider:
 
 ---
 
-**Made with ❤️  by Nitin Sharma**
+**Made with ❤️ by Nitin Sharma**
 
 *Happy API Testing! 🚀*

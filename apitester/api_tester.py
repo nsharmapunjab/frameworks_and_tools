@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Enhanced Universal REST API Testing Tool
+Universal REST API Testing Tool
 Comprehensive Test Case Generation
 Author : Nitin Sharma
 
@@ -9,7 +9,7 @@ Features:
 - Comprehensive test case coverage
 - Advanced payload manipulation
 - Better data type testing
-- Enhanced security testing
+- Security testing
 - Boundary value analysis
 - Real-world scenario testing
 """
@@ -265,8 +265,8 @@ class CurlParser:
         return None
 
 
-class EnhancedTestCaseGenerator:
-    """Enhanced test case generator with comprehensive coverage"""
+class TestCaseGenerator:
+    """Test case generator with comprehensive coverage"""
     
     def __init__(self):
         self.security_payloads = [
@@ -1250,7 +1250,7 @@ class ReportGenerator:
         self.results = []
 
     def add_result(self, test_case: Dict[str, Any], response: Dict[str, Any], expected_status: int):
-        """Add test result with enhanced response data"""
+        """Add test result with response data"""
         passed = self._is_expected_result(response['status'], expected_status, test_case['type'])
         
         # Format response data for better display
@@ -1402,7 +1402,7 @@ class ReportGenerator:
         print(f'  • Mobile-responsive design')
 
     def generate_html_report(self, original_curl: str):
-        """Generate enhanced HTML report"""
+        """Generate HTML report"""
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         filename = f'comprehensive-api-test-report-{timestamp}.html'
         
@@ -1418,19 +1418,19 @@ class ReportGenerator:
                 categories[cat] = []
             categories[cat].append(result)
         
-        html_content = self._build_enhanced_html_content(passed, failed, pass_rate, original_curl, categories)
+        html_content = self._build_html_content(passed, failed, pass_rate, original_curl, categories)
         
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            print(f'\n📄 Enhanced HTML Report Generated: {filename}')
+            print(f'\n📄 HTML Report Generated: {filename}')
             print(f'🌐 Open in browser: file://{os.path.abspath(filename)}')
         except Exception as error:
             print(f'❌ Could not save HTML report: {error}')
 
-    def _build_enhanced_html_content(self, passed: int, failed: int, pass_rate: float, 
+    def _build_html_content(self, passed: int, failed: int, pass_rate: float, 
                                    original_curl: str, categories: Dict[str, List]) -> str:
-        """Build enhanced HTML report content with better organization"""
+        """Build HTML report content with better organization"""
         
         # Build category sections
         category_sections = []
@@ -1887,7 +1887,7 @@ class ReportGenerator:
     <div class="container">
         <div class="header">
             <h1>🧪 Comprehensive API Test Report</h1>
-            <div class="subtitle">Advanced Testing with Enhanced Coverage</div>
+            <div class="subtitle">Advanced Testing with Coverage</div>
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
@@ -1958,7 +1958,7 @@ class ReportGenerator:
 
 
 class CLIInterface:
-    """Enhanced command line interface"""
+    """Command line interface"""
     
     def get_multiline_input(self, prompt: str) -> str:
         """Get multiline input from user with better handling"""
@@ -2032,48 +2032,42 @@ class CLIInterface:
                 sys.exit(1)
     
     def show_welcome_message(self):
-        """Show enhanced welcome message"""
-        print('🧪 Enhanced Universal REST API Testing Tool')
+        """Show welcome message"""
+        print('🧪 Universal REST API Testing Tool')
         print('============================================')
-        print('Built by Nitin Sharma - Enhanced Version with Comprehensive Coverage')
+        print('   Built by Nitin Sharma')
         print('')
-        print('✨ Enhanced Features:')
+        print('✨ Features:')
         print('  🚀 Comprehensive test case generation (100+ scenarios)')
         print('  🔒 Advanced security vulnerability testing')
-        print('  🎯 Enhanced edge case and boundary testing')
+        print('  🎯 Edge case and boundary testing')
         print('  📊 Real HTTP request execution with detailed analysis')
         print('  📄 Rich HTML reports with expandable cURL & API responses')
-        print('  ⏱️  Performance analysis and response time tracking')
-        print('  🛡️  Authentication and authorization testing')
+        print('  ⏱️ Performance analysis and response time tracking')
+        print('  🛡️ Authentication and authorization testing')
         print('  📋 Format validation and structure testing')
         print('  🔍 Nested field and array validation')
         print('  💾 Large payload and stress testing')
         print('')
-        print('🆕 New in this version:')
-        print('  📱 Complete API response viewing in HTML reports')
-        print('  📊 Response size and metadata display')
-        print('  🎨 Beautiful expandable sections for requests & responses')
-        print('  📱 Mobile-responsive design')
-        print('')
-        print('💡 This enhanced version generates significantly more test cases')
+        print('💡 This version generates significantly more test cases')
         print('   covering all aspects of API security and functionality.')
         print('   Each test result includes both the cURL request and API response!')
         print('')
 
 
-class EnhancedAPITester:
-    """Main enhanced API testing orchestrator"""
+class APITester:
+    """Main API testing orchestrator"""
     
     def __init__(self):
         self.parser = CurlParser()
-        self.generator = EnhancedTestCaseGenerator()
+        self.generator = TestCaseGenerator()
         self.executor = HTTPExecutor()
         self.reporter = ReportGenerator()
         self.cli = CLIInterface()
 
     def run_comprehensive_tests(self, curl_command: str, expected_status: int = 200):
         """Run the comprehensive test suite"""
-        print('\n🚀 Starting Enhanced API Test Suite')
+        print('\n🚀 Starting API Test Suite')
         print('=' * 60)
         
         # Parse curl command
@@ -2156,7 +2150,7 @@ class EnhancedAPITester:
         self.reporter.generate_html_report(curl_command)
 
     def run_interactive_mode(self):
-        """Run in enhanced interactive mode"""
+        """Run in interactive mode"""
         try:
             self.cli.show_welcome_message()
             
@@ -2233,9 +2227,9 @@ def test_curl_parsing():
 
 
 def main():
-    """Enhanced main function"""
+    """Main function"""
     args = parse_arguments()
-    tester = EnhancedAPITester()
+    tester = APITester()
     
     # Add a test flag for debugging
     if hasattr(args, 'test') and args.test:
@@ -2248,44 +2242,44 @@ def main():
         return
     
     # Command line mode
-    print('🧪 Running Enhanced API Tests (Command Line Mode)...')
-    print('Enhanced by Nitin Sharma\n')
+    print('🧪 Running API Tests (Command Line Mode)...')
+    print('Built by Nitin Sharma\n')
     
     tester.run_comprehensive_tests(args.curl, args.status)
 
 
 def parse_arguments():
-    """Enhanced argument parsing"""
+    """Argument parsing"""
     parser = argparse.ArgumentParser(
-        description='🧪 Enhanced Universal REST API Testing Tool',
+        description='🧪 Universal REST API Testing Tool',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
-Enhanced Features:
+Features:
   🚀 Comprehensive test case generation (100+ scenarios per API)
   🔒 Advanced security testing: XSS, SQL injection, command injection, path traversal
-  🎯 Enhanced edge case testing: Unicode, special characters, boundary values
+  🎯 Edge case testing: Unicode, special characters, boundary values
   📊 Real HTTP execution with detailed performance analysis
   📄 Rich HTML reports with category organization and expandable cURL commands
-  🛡️  Authentication and authorization testing
+  🛡️ Authentication and authorization testing
   📋 Format validation and structure testing
   🔍 Nested field and array validation
   💾 Large payload and stress testing
-  ⏱️  Response time analysis and performance insights
+  ⏱️ Response time analysis and performance insights
 
 Examples:
   Interactive mode (RECOMMENDED):
-    python enhanced_api_tester.py
+    python api_tester.py
 
   Command line mode:
-    python enhanced_api_tester.py --curl 'curl -X POST "https://api.example.com/test" -H "Content-Type: application/json" -d "{\"name\":\"test\"}"'
+    python api_tester.py --curl 'curl -X POST "https://api.example.com/test" -H "Content-Type: application/json" -d "{\"name\":\"test\"}"'
 
   With expected status:
-    python enhanced_api_tester.py --curl 'curl -X POST ...' --status 201
+    python api_tester.py --curl 'curl -X POST ...' --status 201
 
   Test parsing (DEBUG):
-    python enhanced_api_tester.py --test
+    python api_tester.py --test
 
-👨‍💻 Enhanced with ❤️  by Nitin Sharma - Comprehensive API Testing Solution
+👨‍💻 Built with ❤️ by Nitin Sharma - Comprehensive API Testing Solution
         '''
     )
     
