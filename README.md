@@ -1,4 +1,4 @@
-#  Generic Frameworks & Tools
+#  🚀Generic Frameworks & Tools🚀
 
 A curated collection of reusable frameworks, utilities, and developer tools—built to accelerate common engineering workflows across domains.
 
