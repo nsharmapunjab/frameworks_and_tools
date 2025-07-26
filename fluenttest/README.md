@@ -1,4 +1,4 @@
-# 🚀 FluentTest Generator v2.0
+# 🚀 FluentTest Generator v1.0
 
 **Natural Language UI Automation Framework Generator for Android Apps**
 
@@ -22,12 +22,12 @@ python fluenttest_generator.py
 Step 3: Follow the Prompts
 
 The generator will:
-	•Display an ASCII banner
-	•Prompt for project name (default: fluenttest-framework)
-	•Check and avoid overwriting existing directories
-	•Generate a full-featured framework
-	•Show a tree structure of the project
-	•Offer to install dependencies automatically
+    •Display an ASCII banner
+    •Prompt for project name (default: fluenttest-framework)
+    •Check and avoid overwriting existing directories
+    •Generate a full-featured framework
+    •Show a tree structure of the project
+    •Offer to install dependencies automatically
 
 -->What’s Generated
 
@@ -55,14 +55,14 @@ fluenttest-framework/
 └── LICENSE                       # MIT License
 
 -->Key Features
-	• Natural Language UI Locator with smart element discovery
-	• Advanced Query Parser for complex NL queries
-	• Integrated Test Suite with HTML reporting
-	• One-Click Installation for Windows/Mac/Linux
-	• Ready-to-Run Examples
-	• Professional Documentation
-	• Makefile Support for CI integration
-	• Proper Python Packaging (setup.py)
+    • Natural Language UI Locator with smart element discovery
+    • Advanced Query Parser for complex NL queries
+    • Integrated Test Suite with HTML reporting
+    • One-Click Installation for Windows/Mac/Linux
+    • Ready-to-Run Examples
+    • Professional Documentation
+    • Makefile Support for CI integration
+    • Proper Python Packaging (setup.py)
 
 
 -->Interactive Experience
@@ -102,12 +102,36 @@ python examples/advanced_example.py
 
 
 -->Why Choose This Generator?
-	• Single File Deployment: One Python script to distribute
-	• Interactive & User-Friendly: No config, no manual steps
-	• Fully Structured: Framework with modules, examples, docs
-	• Cross-Platform: Compatible with Windows, Mac, and Linux
-	• Ready for Testing: Works out-of-the-box
-	• Includes Docs & Best Practices
-	• Zero Manual Work: Everything is automated!
+    • Single File Deployment: One Python script to distribute
+    • Interactive & User-Friendly: No config, no manual steps
+    • Fully Structured: Framework with modules, examples, docs
+    • Cross-Platform: Compatible with Windows, Mac, and Linux
+    • Ready for Testing: Works out-of-the-box
+    • Includes Docs & Best Practices
+    • Zero Manual Work: Everything is automated!
 
+---
 
+## 📞 Contact
+
+- **📧 Email**: [nsharmapunjab@gmail.com](mailto:nsharmapunjab@gmail.com)
+- **💼 LinkedIn**: [Connect with me](https://www.linkedin.com/in/nitin-sharma-23512743/)
+- **🌐 Website**: [Learn with Nitin](https://learnwithnitin.blogspot.com/)
+
+---
+
+## 🌟 Support the Project
+
+If this tool has helped you in your UI testing journey, consider:
+
+- ⭐ **Starring** the repository
+- 🐛 **Reporting** bugs and issues
+- 💡 **Suggesting** new features
+- 🤝 **Contributing** code improvements
+- 📢 **Sharing** with your team and network
+
+---
+
+**Made with ❤️  by Nitin Sharma**
+
+*Happy UI Testing! 🚀*
