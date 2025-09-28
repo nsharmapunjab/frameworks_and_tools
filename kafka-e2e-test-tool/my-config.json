@@ -1,0 +1,40 @@
+{
+  "kafka": {
+    "bootstrap_servers": "localhost:9092",
+    "producer": {
+      "topic": "test-producer-topic",
+      "config": {
+        "acks": "all",
+        "retries": 3
+      }
+    },
+    "consumer": {
+      "topic": "test-consumer-topic",
+      "config": {
+        "group_id": "kafka-e2e-test-group",
+        "auto_offset_reset": "earliest"
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "name": "basic_test",
+      "description": "Basic message flow test",
+      "enabled": true,
+      "messages": [
+        "Hello Kafka!",
+        "Test Message 2"
+      ],
+      "validations": [
+        "delivery",
+        "order"
+      ]
+    }
+  ],
+  "validation_config": {
+    "timeout": 30,
+    "max_latency_ms": 5000,
+    "expected_order": true,
+    "allow_duplicates": false
+  }
+}
